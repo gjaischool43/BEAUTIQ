@@ -6,7 +6,7 @@
             "DOM"
         ],
         "module": "ESNext",
-        "moduleResolution": "bundler",
+        "moduleResolution": "Bundler",
         "jsx": "react-jsx",
         "strict": true,
         "skipLibCheck": true,
@@ -19,6 +19,7 @@
         ]
     },
     "include": [
-        "src"
+        "src",
+        "vite-env.d.ts"
     ]
 }
