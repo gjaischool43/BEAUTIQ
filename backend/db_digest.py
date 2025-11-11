@@ -20,11 +20,20 @@ from db_digest import engine  # 기존에 사용 중인 SQLAlchemy engine 재사
 # ───────── OpenAI: lazy client ─────────
 from openai import OpenAI
 
+import os
+from sqlalchemy import create_engine
+
+DB_URL = os.getenv("DATABASE_URL")
+if not DB_URL:
+    raise RuntimeError("DATABASE_URL is not set")
+
+engine = create_engine(DB_URL, pool_pre_ping=True)
+
 ShortStr: TypeAlias = constr(min_length=1, max_length=200)
 LongStr: TypeAlias = constr(min_length=1, max_length=5000)
 _client = None
 
-OPENAI_API_KEY = "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"
+
 
 def get_openai_client() -> OpenAI:
     global _client
