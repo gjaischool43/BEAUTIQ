@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "lib": [
+            "ESNext",
+            "DOM"
+        ],
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "jsx": "react-jsx",
+        "strict": true,
+        "skipLibCheck": true,
+        // axios default import 안정화
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        // Vite 타입 인식 (이 라인이 있거나, 아래 reference로 대체 가능)
+        "types": [
+            "vite/client"
+        ]
+    },
+    "include": [
+        "src"
+    ]
+}

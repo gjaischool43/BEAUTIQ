@@ -1,0 +1,34 @@
+services:
+  #  FastAPI 백엔드 (Web Service)
+  - type: web
+    name: myapp-backend
+    env: python
+    rootDirectory: backend
+    plan: free              # paid로 바꾸면 슬립 없음/더 빠른 부팅
+    region: oregon          # 필요 시 frankfurt 등으로
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      # 백엔드 내부 환경변수(예: DB, API 키). 값은 Render 대시보드에서 Secret으로 덮어써도 됨
+      - key: OPENAI_API_KEY
+        sync: false   # 값을 블루프린트에 저장하지 않고, 생성 후 대시보드에서 입력
+      - key: DATABASE_URL
+        sync: false
+
+  #  React 프런트엔드 (Static Site)
+  - type: static_site
+    name: myapp-frontend
+    rootDirectory: frontend
+    buildCommand: npm ci && npm run build
+    publishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        # 백엔드 생성 후 실제 주소로 업데이트 (예: https://myapp-backend.onrender.com)
+        value: https://myapp-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
