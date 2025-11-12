@@ -23,7 +23,7 @@ services:
     runtime: static                 # ← 정답: static
     rootDir: frontend
     buildCommand: npm ci && npm run build
-    staticPublishPath: ./dist       # ← publishPath 아님
+    staticPublishPath: build       # ← publishPath 아님
     envVars:
       - key: NODE_VERSION
         value: 20
