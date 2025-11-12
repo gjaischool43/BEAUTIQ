@@ -2,24 +2,36 @@
     "compilerOptions": {
         "target": "ES2020",
         "lib": [
-            "ESNext",
-            "DOM"
+            "ES2020",
+            "DOM",
+            "DOM.Iterable"
         ],
         "module": "ESNext",
         "moduleResolution": "Bundler",
         "jsx": "react-jsx",
         "strict": true,
-        "skipLibCheck": true,
-        // axios default import 안정화
-        "esModuleInterop": true,
-        "allowSyntheticDefaultImports": true,
-        // Vite 타입 인식 (이 라인이 있거나, 아래 reference로 대체 가능)
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "src/*"
+            ]
+        },
         "types": [
             "vite/client"
-        ]
+        ],
+        "skipLibCheck": true,
+        "allowJs": false,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true
     },
     "include": [
-        "src",
-        "vite-env.d.ts"
+        "src"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
     ]
 }
