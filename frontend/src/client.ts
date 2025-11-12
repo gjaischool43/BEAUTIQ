@@ -1,1 +1,0 @@
-import axios from "axios";// ë°°í¬ ???˜ê²½ ë³€?˜ë¡œ API ê¸°ë³¸ URL??ì£¼ì…?˜ëŠ” ?¨í„´// Vite??VITE_ ?‘ë‘ë§?import.meta.env ???¸ì¶œ??const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";export const api = axios.create({ baseURL });
