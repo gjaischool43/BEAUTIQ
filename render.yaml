@@ -1,35 +1,34 @@
 services:
-  # FastAPI 백엔드 (Web Service)
+  # 1) FastAPI 백엔드 (Web Service)
   - type: web
     name: beautiq-backend
-    runtime: python                 # ← env: python 아님
-    rootDir: backend                # ← rootDirectory → rootDir
+    runtime: python
+    rootDir: backend
     plan: free
     region: oregon
     buildCommand: pip install -U pip && pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /healthz
     envVars:
-      - key: PYTHON_VERSION         # Render 권장: 3.12 계열 >> 일단 13 버전으로 진행해봄
-        value: 3.13.6
+      - key: PYTHON_VERSION
+        value: 3.12.6
       - key: OPENAI_API_KEY
         sync: false
       - key: DATABASE_URL
         sync: false
 
-  # React 프런트엔드 (Static Site)
-  - type: web
+  # 2) React 프런트 (Static Site)
+  - type: static_site
     name: beautiq-frontend
-    runtime: static                 # ← 정답: static
     rootDir: frontend
     buildCommand: npm ci && npm run build
-    staticPublishPath: build       # ← publishPath 아님
+    staticPublishPath: dist
     envVars:
       - key: NODE_VERSION
         value: 20
       - key: VITE_API_BASE_URL
-        # 백엔드 생성 후 실제 주소로 교체 (예: https://beautiq-backend.onrender.com)
-        value: https://myapp-backend.onrender.com
+        # 배포 후 실제 백엔드 외부 URL로 바꾸세요.
+        value: https://beautiq-backend.onrender.com
     routes:
       - type: rewrite
         source: /*

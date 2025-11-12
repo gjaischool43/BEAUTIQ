@@ -32,7 +32,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("FRONT_ORIGIN","http://localhost:5173")],
+    allow_origins=["*"], ## 초기엔 *로 테스트하고 배포후에 프론트 주소로 교체해야됨(ex. https://beautiq-frontend.onrender.com)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
