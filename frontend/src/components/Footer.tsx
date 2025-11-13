@@ -1,4 +1,3 @@
-// Footer.tsx
 import { Mail, MessageCircle } from "lucide-react";
 
 export function Footer() {
@@ -9,7 +8,8 @@ export function Footer() {
                     <div>
                         <h3 className="text-primary mb-4 font-semibold">BrandLaunch AI</h3>
                         <p className="text-muted-foreground leading-relaxed">
-                            인플루언서의 데이터 기반 리뷰를 분석하여<br />
+                            인플루언서의 데이터 기반 리뷰를 분석하여
+                            <br />
                             맞춤형 화장품 브랜드 론칭 전략을 제안합니다.
                         </p>
                     </div>
