@@ -1,4 +1,3 @@
-// Header.tsx
 import { Button } from "./ui/button";
 
 interface HeaderProps {
