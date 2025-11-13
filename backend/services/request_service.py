@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from ..core.security import hash_password
+from core.security import hash_password
 
 def create_request(db: Session, *, payload) -> int:
     pw_hash = hash_password(payload.view_pw)
