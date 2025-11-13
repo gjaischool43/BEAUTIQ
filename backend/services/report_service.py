@@ -2,7 +2,7 @@ import re, json, datetime
 from collections import Counter
 from typing import Any, Dict, List
 import pandas as pd
-from ..core.llm import llm_section
+from core.llm import llm_section
 
 def _tier(s: float) -> str:
     s = float(s)

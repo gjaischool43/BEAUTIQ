@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api import health, report, request
-from ..core.config import ALLOWED_ORIGINS
+from app.api import health, report, request
+from core.config import ALLOWED_ORIGINS
 
 app = FastAPI(title="BM Report API", version="1.0")
 
