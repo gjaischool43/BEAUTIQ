@@ -1,7 +1,7 @@
 # backend/alembic/env.py
 import os
 from logging.config import fileConfig
-
+import sys
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
@@ -10,6 +10,9 @@ from alembic import context
 from models.base import Base       # Base = DeclarativeBase 상속
 # backend/models/request.py 를 import 해서 테이블을 메타데이터에 등록
 import models.request              # noqa: F401 (사용 안 해도 import만으로 등록됨)
+
+# backend 폴더를 sys.path에 추가
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Alembic Config 객체
 config = context.config
