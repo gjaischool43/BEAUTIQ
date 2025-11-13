@@ -1,18 +1,22 @@
 # backend/alembic/env.py
 import os
-from logging.config import fileConfig
 import sys
+from logging.config import fileConfig
+
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# 네가 말해준 실제 구조에 맞게 import
-# backend/models/base.py 에 class Base(DeclarativeBase): 정의됨
-from models.base import Base       # Base = DeclarativeBase 상속
-# backend/models/request.py 를 import 해서 테이블을 메타데이터에 등록
-import models.request              # noqa: F401 (사용 안 해도 import만으로 등록됨)
+# === 1) backend 폴더를 sys.path에 가장 먼저 추가 ===
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
-# backend 폴더를 sys.path에 추가
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+# 이제 backend/ 밑의 패키지들을 import 가능
+# backend/models/base.py 에서 Base 정의
+from models.base import Base       # Base = declarative_base() 반환
+import models.request              # noqa: F401  (모델 등록용)
+
+# === 2) Alembic 기본 설정 ===
 
 # Alembic Config 객체
 config = context.config
