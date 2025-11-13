@@ -1,1 +1,10 @@
-import { createRoot } from "react-dom/client"; // ???´ê±´ '?¨í‚¤ì§€ ?´ë? ê²½ë¡œ' ?„í¬??(?¤ì¹˜ ?€???„ë‹˜)import App from "./App";                       // ?ˆë?ê²½ë¡œ(X) ?ë?ê²½ë¡œ(O)import "./index.css";createRoot(document.getElementById("root")!).render(<App />);
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css"; // ìˆìœ¼ë©´
+
+ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+    <React.StrictMode>
+        <App />
+    </React.StrictMode>
+);
