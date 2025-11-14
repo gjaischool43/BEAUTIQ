@@ -1,3 +1,4 @@
+// src/App.tsx
 import { useState } from "react";
 
 import { Header } from "./components/Header";
@@ -32,17 +33,44 @@ export default function App() {
         setSubmissions((prev) => [...prev, formData]);
     };
 
-    return (
-        <div className="min-h-screen flex flex-col">
-            {currentPage === "home" && (
-                <>
-                    <Header onContactClick={handleRequestClick} />
-                    <main className="flex-1">
-                        <HomePage onRequestClick={handleRequestClick} />
-                    </main>
-                    <Footer />
+    let pageNode;
+    if (currentPage === "home") {
+        pageNode = (
+            <HomePage
+                onRequestClick={handleRequestClick}
+            />
+        );
+    } else if (currentPage === "request") {
+        pageNode = (
+            <RequestFormPage
+                onBack={handleBackToHome}
+                onSubmit={handleFormSubmit}
+            />
+        );
+    } else {
+        pageNode = (
+            <AdminPage
+                onBack={handleBackToHome}
+                submissions={submissions}
+            />
+        );
+    }
 
-                    {/* 숨겨진 관리자 버튼 */}
+    return (
+        <>
+            <div className="min-h-screen flex flex-col">
+                {/* 헤더는 모든 페이지에 공통으로 */}
+                <Header onContactClick={handleRequestClick} />
+
+                {/* 페이지별 내용 */}
+                <main className="flex-1">
+                    {pageNode}
+                </main>
+
+                <Footer />
+
+                {/* 숨겨진 관리자 버튼은 홈일 때만 노출 */}
+                {currentPage === "home" && (
                     <button
                         onClick={handleAdminClick}
                         className="fixed bottom-4 right-4 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 flex items-center justify-center opacity-50 hover:opacity-100 transition-opacity"
@@ -50,18 +78,11 @@ export default function App() {
                     >
                         관리자페이지
                     </button>
-                </>
-            )}
+                )}
+            </div>
 
-            {currentPage === "request" && (
-                <RequestFormPage onBack={handleBackToHome} onSubmit={handleFormSubmit} />
-            )}
-
-            {currentPage === "admin" && (
-                <AdminPage onBack={handleBackToHome} submissions={submissions} />
-            )}
-
+            {/* Toaster는 자식 없이 단독으로 */}
             <Toaster />
-        </div>
+        </>
     );
 }
