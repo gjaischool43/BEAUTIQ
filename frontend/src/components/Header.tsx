@@ -5,21 +5,23 @@ interface HeaderProps {
     onRequestClick: () => void;
     onAdminClick: () => void;
     onLookupClick: () => void;   // 새로 추가
+    onServiceIntroClick: () => void;
+    onExampleClick: () => void;
 }
 
-export function Header({ onRequestClick, onAdminClick, onLookupClick }: HeaderProps) {
+export function Header({ onExampleClick, onServiceIntroClick, onRequestClick, onAdminClick, onLookupClick }: HeaderProps) {
     return (
         <header className="w-full border-b bg-background">
             <div className="container mx-auto flex items-center justify-between py-4 px-6">
                 <div className="font-bold text-xl">BEAUTIQ</div>
                 <div className="flex gap-3">
-                    <Button variant="ghost" onClick={onRequestClick}>
+                    <Button variant="ghost" onClick={onServiceIntroClick}>
                         서비스 소개
                     </Button>
-                    <Button variant="ghost">
+                    <Button variant="ghost" onClick={onExampleClick}>
                         예시 보고서
                     </Button>
-                    <Button variant="ghost">
+                    <Button variant="ghost" onClick={onRequestClick}>
                         문의하기
                     </Button>
                     {/* 의뢰 조회 버튼 */}
