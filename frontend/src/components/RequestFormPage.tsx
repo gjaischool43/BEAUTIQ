@@ -88,12 +88,15 @@ export function RequestFormPage({ onBack, onSubmit }: RequestFormPageProps) {
                 activity_name: formData.activityName,
                 platform: formData.platform,
                 channel_name: formData.channelName,
-                category_code: formData.productCategory,
+                category_code: formData.productCategory,  // 값은 'skin_toner' 등
                 brand_concept: formData.brandConcept,
                 contact_method: formData.contact,
                 email: formData.email,
                 view_pw: formData.viewPassword,
             };
+
+            console.log("[DEBUG] API_BASE = ", API_BASE);
+            console.log("[DEBUG] payload = ", payload);
 
             const resp = await fetch(`${API_BASE}/request`, {
                 method: "POST",
