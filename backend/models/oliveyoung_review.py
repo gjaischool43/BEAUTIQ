@@ -38,7 +38,7 @@ class OliveyoungReview(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
 
-    product_id = Column(BigInteger, nullable=False)
+    product_id = Column(String(30), nullable=False)
     product_name = Column(String(300), nullable=False)
 
     score = Column(Numeric(8, 6), nullable=False)
