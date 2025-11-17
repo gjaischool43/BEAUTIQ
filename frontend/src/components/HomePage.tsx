@@ -6,9 +6,13 @@ import { ImageWithFallback } from "./figma/ImageWithFallback";
 
 interface HomePageProps {
     onRequestClick: () => void;
+    onExampleReportClick: () => void;
+    onContactClick: () => void;
 }
 
-export function HomePage({ onRequestClick }: HomePageProps) {
+export function HomePage({ onRequestClick,
+    onExampleReportClick,
+    onContactClick, }: HomePageProps) {
     return (
         <div className="min-h-screen">
             {/* Hero Section */}
@@ -33,6 +37,8 @@ export function HomePage({ onRequestClick }: HomePageProps) {
                             >
                                 의뢰서 작성하기
                             </Button>
+
+
                         </div>
                         <div className="relative h-[400px] rounded-2xl overflow-hidden shadow-2xl">
                             <ImageWithFallback
