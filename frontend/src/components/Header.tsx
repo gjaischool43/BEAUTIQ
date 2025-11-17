@@ -1,43 +1,35 @@
+// src/components/Header.tsx
 import { Button } from "./ui/button";
 
 interface HeaderProps {
-    onContactClick?: () => void;
+    onRequestClick: () => void;
+    onAdminClick: () => void;
+    onLookupClick: () => void;   // 새로 추가
 }
 
-export function Header({ onContactClick }: HeaderProps) {
+export function Header({ onRequestClick, onAdminClick, onLookupClick }: HeaderProps) {
     return (
-        <header className="border-b border-border bg-background sticky top-0 z-50">
-            <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-12">
-                    <h1 className="text-primary text-lg font-semibold">BrandLaunch AI</h1>
-                    <nav className="hidden md:flex items-center gap-8">
-                        <a
-                            href="#service"
-                            className="text-foreground/70 hover:text-foreground transition-colors"
-                        >
-                            서비스 소개
-                        </a>
-                        <a
-                            href="#examples"
-                            className="text-foreground/70 hover:text-foreground transition-colors"
-                        >
-                            예시 보고서
-                        </a>
-                        <a
-                            href="#contact"
-                            className="text-foreground/70 hover:text-foreground transition-colors"
-                        >
-                            문의하기
-                        </a>
-                    </nav>
+        <header className="w-full border-b bg-background">
+            <div className="container mx-auto flex items-center justify-between py-4 px-6">
+                <div className="font-bold text-xl">BEAUTIQ</div>
+                <div className="flex gap-3">
+                    <Button variant="ghost" onClick={onRequestClick}>
+                        서비스 소개
+                    </Button>
+                    <Button variant="ghost">
+                        예시 보고서
+                    </Button>
+                    <Button variant="ghost">
+                        문의하기
+                    </Button>
+                    {/* 의뢰 조회 버튼 */}
+                    <Button variant="outline" onClick={onLookupClick}>
+                        의뢰 조회
+                    </Button>
+                    <Button variant="secondary" onClick={onAdminClick}>
+                        관리자 페이지
+                    </Button>
                 </div>
-
-                <Button
-                    onClick={onContactClick}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                    문의하기
-                </Button>
             </div>
         </header>
     );
