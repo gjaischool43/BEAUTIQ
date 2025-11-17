@@ -1,238 +1,239 @@
 // src/components/AdminPage.tsx
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from "./ui/card";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "./ui/table";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from "./ui/dialog";
 import { toast } from "sonner";
-import { ArrowLeft, Eye } from "lucide-react";
-import { FormData } from "./RequestFormPage";
 
 interface AdminPageProps {
     onBack: () => void;
-    submissions: FormData[];
+    onOpenReportDetail: (reportId: number) => void;
+}
+type CurrentStatus = "idle" | "preparing" | "ready";
+
+interface AdminRequestItem {
+    request_id: number;
+    activity_name: string;
+    platform: string;
+    channel_name: string;
+    category_code: string;
+    email: string;
+
+    // 현재상태: idle(분석 전) / preparing(분석중) / ready(준비완료)
+    status: CurrentStatus;  //'preparing'은 프론트에서만 잠깐 쓰는 값
+
+    report_id: number | null;   // ready 상태면 report_id 존재
+    is_exported: boolean;
 }
 
-export function AdminPage({ onBack, submissions }: AdminPageProps) {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [selectedSubmission, setSelectedSubmission] =
-        useState<FormData | null>(null);
-    const [isDetailOpen, setIsDetailOpen] = useState(false);
+export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
+    const [items, setItems] = useState<AdminRequestItem[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [runningId, setRunningId] = useState<number | null>(null); // 어떤 요청이 분석중인지 표시
 
-    const handleLogin = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (username === "admin" && password === "admin") {
-            setIsLoggedIn(true);
-            toast.success("로그인 성공");
-        } else {
-            toast.error("아이디 또는 비밀번호가 올바르지 않습니다.");
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+    const fetchRequests = async () => {
+        setLoading(true);
+        try {
+            const resp = await fetch(`${API_BASE}/admin/requests`);
+            if (!resp.ok) {
+                throw new Error(`요청 실패 (status ${resp.status})`);
+            }
+
+            // 백엔드 응답
+            const raw = await resp.json() as {
+                items: {
+                    request_id: number;
+                    activity_name: string;
+                    platform: string;
+                    channel_name: string;
+                    category_code: string;
+                    brand_concept: string;
+                    contact_method: string;
+                    email: string;
+                    status: "idle" | "ready";   // 백엔드는 두 값만 옴
+                    report_id: number | null;
+                    is_exported: boolean;
+                }[];
+            };
+
+            // 프론트에서 CurrentStatus 로 변환 (idle / ready 그대로 사용)
+            const normalized: AdminRequestItem[] = raw.items.map((it) => ({
+                request_id: it.request_id,
+                activity_name: it.activity_name,
+                platform: it.platform,
+                channel_name: it.channel_name,
+                category_code: it.category_code,
+                email: it.email,
+                status: it.status,          // "idle" 또는 "ready"
+                report_id: it.report_id,
+                is_exported: it.is_exported,
+            }));
+
+            setItems(normalized);
+        } catch (err: any) {
+            toast.error(err.message || "요청 목록을 불러오는 중 오류가 발생했습니다.");
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleViewDetail = (submission: FormData) => {
-        setSelectedSubmission(submission);
-        setIsDetailOpen(true);
-    };
+    useEffect(() => {
+        fetchRequests(); // 페이지 들어올 때마다 DB에서 가져오기
+    }, [API_BASE]);
 
-    const getCategoryLabel = (category: string) => {
-        const labels: Record<string, string> = {
-            skincare: "스킨케어",
-            makeup: "메이크업",
-            haircare: "헤어케어",
-            bodycare: "바디케어",
-            fragrance: "향수",
-            other: "기타",
-        };
-        return labels[category] || category;
-    };
-
-    if (!isLoggedIn) {
-        return (
-            <div className="min-h-screen bg-muted/20 flex items-center justify-center py-12">
-                <div className="container mx-auto px-6 max-w-md">
-                    <Button variant="ghost" onClick={onBack} className="mb-6">
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        돌아가기
-                    </Button>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>관리자 로그인</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleLogin} className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="username">아이디</Label>
-                                    <Input
-                                        id="username"
-                                        value={username}
-                                        onChange={(e) => setUsername(e.target.value)}
-                                        placeholder="아이디를 입력하세요"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="password">비밀번호</Label>
-                                    <Input
-                                        id="password"
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="비밀번호를 입력하세요"
-                                    />
-                                </div>
-
-                                <Button type="submit" className="w-full">
-                                    관리자 로그인
-                                </Button>
-
-                                <p className="text-sm text-muted-foreground text-center mt-4">
-                                    Demo 계정: admin / admin
-                                </p>
-                            </form>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+    // 🔹 분석하기 버튼 핸들러
+    const handleRunAnalysis = async (requestId: number) => {
+        // 1) 클릭 즉시, 로컬 상태를 '준비중(preparing)'으로 바꾸기 (낙관적 갱신)
+        setItems((prev) =>
+            prev.map((item) =>
+                item.request_id === requestId
+                    ? { ...item, status: "preparing" }
+                    : item
+            )
         );
-    }
+        setRunningId(requestId);
+
+        try {
+            const resp = await fetch(`${API_BASE}/admin/requests/${requestId}/start-analysis`, {
+                method: "POST",
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => null);
+                // request 미존재 등의 경우
+                throw new Error(err?.detail || `분석 시작 실패 (status ${resp.status})`);
+            }
+
+            const data = await resp.json() as {
+                request_id: number;
+                status: "preparing" | "ready";
+                message: string;
+            };
+
+            toast.success(data.message || "분석이 완료되었습니다.");
+
+            // 2) 응답에 따라 상태 업데이트
+            if (data.status === "ready") {
+                // 분석 완료 → '준비완료'로 표시 & 리스트 새로고침, 분석까지 끝났으면 /admin/requests 다시 불러오기
+                await fetchRequests();
+            } else {
+                // 아직 준비중 상태라면 그대로 두거나, 수동 갱신
+                setItems((prev) =>
+                    prev.map((item) =>
+                        item.request_id === requestId
+                            ? { ...item, status: "preparing" }
+                            : item
+                    )
+                );
+            }
+        } catch (err: any) {
+            // 에러 → '준비중'을 다시 'idle'로 롤백 + 에러 메시지
+            toast.error(err.message || "분석 중 오류가 발생했습니다.");
+
+            setItems((prev) =>
+                prev.map((item) =>
+                    item.request_id === requestId
+                        ? { ...item, status: "idle" }  // 분석 전 상태로 되돌리기
+                        : item
+                )
+            );
+        } finally {
+            setRunningId(null);
+        }
+    };
+
+    const renderStatusBadge = (status: CurrentStatus) => {
+        if (status === "ready") {
+            return (
+                <Badge variant="outline" className="bg-emerald-50 border-emerald-300">
+                    준비완료
+                </Badge>
+            );
+        }
+        if (status === "preparing") {
+            return (
+                <Badge variant="outline" className="bg-yellow-50 border-yellow-300">
+                    준비중
+                </Badge>
+            );
+        }
+        // idle (아직 분석 시작 전)
+        return (
+            <span className="text-xs text-muted-foreground">
+                분석 전
+            </span>
+        );
+    };
 
     return (
         <div className="min-h-screen bg-muted/20 py-12">
-            <div className="container mx-auto px-6">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" onClick={onBack}>
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            돌아가기
-                        </Button>
-                        <h1>의뢰서 관리 페이지</h1>
-                    </div>
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            setIsLoggedIn(false);
-                            setUsername("");
-                            setPassword("");
-                        }}
-                    >
-                        로그아웃
-                    </Button>
-                </div>
+            <div className="container mx-auto max-w-5xl px-6">
+                <Button variant="ghost" onClick={onBack} className="mb-6">
+                    메인으로
+                </Button>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>접수된 의뢰 목록</CardTitle>
+                        <CardTitle>의뢰 내역 관리</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {submissions.length === 0 ? (
-                            <div className="text-center py-12 text-muted-foreground">
-                                아직 접수된 의뢰가 없습니다.
-                            </div>
+                        {loading ? (
+                            <div>불러오는 중...</div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>활동명</TableHead>
-                                            <TableHead>채널명</TableHead>
-                                            <TableHead>제품 카테고리</TableHead>
-                                            <TableHead>연락처</TableHead>
-                                            <TableHead>이메일</TableHead>
-                                            <TableHead className="text-right">액션</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {submissions.map((s, i) => (
-                                            <TableRow key={i}>
-                                                <TableCell>{s.activityName}</TableCell>
-                                                <TableCell className="max-w-[200px] truncate">
-                                                    {s.channelName}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {getCategoryLabel(s.productCategory)}
-                                                </TableCell>
-                                                <TableCell>{s.contact}</TableCell>
-                                                <TableCell>{s.email}</TableCell>
-                                                <TableCell className="text-right">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>ID</TableHead>
+                                        <TableHead>활동명</TableHead>
+                                        <TableHead>채널명</TableHead>
+                                        <TableHead>카테고리</TableHead>
+                                        <TableHead>현재상태</TableHead>
+                                        <TableHead>액션</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {items.map((item) => (
+                                        <TableRow key={item.request_id}>
+                                            <TableCell>{item.request_id}</TableCell>
+                                            <TableCell>{item.activity_name}</TableCell>
+                                            <TableCell>{item.channel_name}</TableCell>
+                                            <TableCell>{item.category_code}</TableCell>
+                                            <TableCell>
+                                                {renderStatusBadge(item.status)}
+                                            </TableCell>
+                                            <TableCell className="space-x-2">
+                                                {/* 분석하기 버튼 */}
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    disabled={runningId === item.request_id}
+                                                    onClick={() => handleRunAnalysis(item.request_id)}
+                                                >
+                                                    {runningId === item.request_id ? "분석중..." : "분석하기"}
+                                                </Button>
+
+                                                {/* 준비완료 + report_id 존재 시 보고서 보기 */}
+                                                {item.status === "ready" && item.report_id && (
                                                     <Button
                                                         size="sm"
-                                                        variant="outline"
-                                                        onClick={() => handleViewDetail(s)}
+                                                        onClick={() => onOpenReportDetail(item.report_id!)}
                                                     >
-                                                        <Eye className="w-4 h-4 mr-2" /> 보기
+                                                        보고서 보기
                                                     </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
                         )}
                     </CardContent>
                 </Card>
-
-                <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle>의뢰서 상세 정보</DialogTitle>
-                        </DialogHeader>
-                        {selectedSubmission && (
-                            <div className="space-y-4">
-                                <div>
-                                    <Label>활동명</Label>
-                                    <p className="mt-1">{selectedSubmission.activityName}</p>
-                                </div>
-                                <div>
-                                    <Label>채널명</Label>
-                                    <p className="mt-1">{selectedSubmission.channelName}</p>
-                                </div>
-                                <div>
-                                    <Label>제품 카테고리</Label>
-                                    <p className="mt-1">
-                                        {getCategoryLabel(selectedSubmission.productCategory)}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label>브랜드 콘셉트</Label>
-                                    <p className="mt-1 whitespace-pre-wrap">
-                                        {selectedSubmission.brandConcept}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label>연락처</Label>
-                                    <p className="mt-1">{selectedSubmission.contact}</p>
-                                </div>
-                                <div>
-                                    <Label>이메일</Label>
-                                    <p className="mt-1">{selectedSubmission.email}</p>
-                                </div>
-                            </div>
-                        )}
-                    </DialogContent>
-                </Dialog>
             </div>
         </div>
     );
 }
+

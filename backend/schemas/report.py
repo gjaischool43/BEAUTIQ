@@ -23,3 +23,17 @@ class BuildReportOutput(BaseModel):
     meta: Dict[str, Any]
     digest: Dict[str, Any]
     sections: List[Section]
+
+class ReportBMDetail(BaseModel):
+    report_id: int
+    request_id: int
+    title: str | None = None
+    contents: Dict[str, Any]
+    is_exported: bool
+
+    class Config:
+        orm_mode = True
+
+class ReportExportResp(BaseModel):
+    report_id: int
+    is_exported: bool
