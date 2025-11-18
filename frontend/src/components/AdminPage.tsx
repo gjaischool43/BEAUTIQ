@@ -1,15 +1,26 @@
 // src/components/AdminPage.tsx
 import { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
+import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardContent,
+    CardDescription,
+} from "./ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 import { toast } from "sonner";
+
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "";
 
 interface AdminPageProps {
     onBack: () => void;
     onOpenReportDetail: (reportId: number) => void;
 }
+
 type CurrentStatus = "idle" | "preparing" | "ready";
 
 interface AdminRequestItem {
@@ -21,9 +32,9 @@ interface AdminRequestItem {
     email: string;
 
     // 현재상태: idle(분석 전) / preparing(분석중) / ready(준비완료)
-    status: CurrentStatus;  //'preparing'은 프론트에서만 잠깐 쓰는 값
+    status: CurrentStatus; // 'preparing'은 프론트에서만 잠깐 쓰는 값
 
-    report_id: number | null;   // ready 상태면 report_id 존재
+    report_id: number | null; // ready 상태면 report_id 존재
     is_exported: boolean;
 }
 
@@ -31,6 +42,9 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
     const [items, setItems] = useState<AdminRequestItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [runningId, setRunningId] = useState<number | null>(null); // 어떤 요청이 분석중인지 표시
+    const [isAuthed, setIsAuthed] = useState<boolean>(() => {
+        return localStorage.getItem("beautiq_admin_authed") === "true";
+    });
 
     const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -43,7 +57,7 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
             }
 
             // 백엔드 응답
-            const raw = await resp.json() as {
+            const raw = (await resp.json()) as {
                 items: {
                     request_id: number;
                     activity_name: string;
@@ -53,7 +67,7 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
                     brand_concept: string;
                     contact_method: string;
                     email: string;
-                    status: "idle" | "ready";   // 백엔드는 두 값만 옴
+                    status: "idle" | "ready"; // 백엔드는 두 값만 옴
                     report_id: number | null;
                     is_exported: boolean;
                 }[];
@@ -67,7 +81,7 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
                 channel_name: it.channel_name,
                 category_code: it.category_code,
                 email: it.email,
-                status: it.status,          // "idle" 또는 "ready"
+                status: it.status, // "idle" 또는 "ready"
                 report_id: it.report_id,
                 is_exported: it.is_exported,
             }));
@@ -81,8 +95,11 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
     };
 
     useEffect(() => {
-        fetchRequests(); // 페이지 들어올 때마다 DB에서 가져오기
-    }, [API_BASE]);
+        // 🔹 로그인 되어 있을 때만 의뢰 목록을 불러오도록
+        if (isAuthed) {
+            fetchRequests();
+        }
+    }, [API_BASE, isAuthed]);
 
     // 🔹 분석하기 버튼 핸들러
     const handleRunAnalysis = async (requestId: number) => {
@@ -91,23 +108,28 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
             prev.map((item) =>
                 item.request_id === requestId
                     ? { ...item, status: "preparing" }
-                    : item
-            )
+                    : item,
+            ),
         );
         setRunningId(requestId);
 
         try {
-            const resp = await fetch(`${API_BASE}/admin/requests/${requestId}/start-analysis`, {
-                method: "POST",
-            });
+            const resp = await fetch(
+                `${API_BASE}/admin/requests/${requestId}/start-analysis`,
+                {
+                    method: "POST",
+                },
+            );
 
             if (!resp.ok) {
                 const err = await resp.json().catch(() => null);
                 // request 미존재 등의 경우
-                throw new Error(err?.detail || `분석 시작 실패 (status ${resp.status})`);
+                throw new Error(
+                    err?.detail || `분석 시작 실패 (status ${resp.status})`,
+                );
             }
 
-            const data = await resp.json() as {
+            const data = (await resp.json()) as {
                 request_id: number;
                 status: "preparing" | "ready";
                 message: string;
@@ -117,7 +139,7 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
 
             // 2) 응답에 따라 상태 업데이트
             if (data.status === "ready") {
-                // 분석 완료 → '준비완료'로 표시 & 리스트 새로고침, 분석까지 끝났으면 /admin/requests 다시 불러오기
+                // 분석 완료 → '준비완료'로 표시 & 리스트 새로고침
                 await fetchRequests();
             } else {
                 // 아직 준비중 상태라면 그대로 두거나, 수동 갱신
@@ -125,8 +147,8 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
                     prev.map((item) =>
                         item.request_id === requestId
                             ? { ...item, status: "preparing" }
-                            : item
-                    )
+                            : item,
+                    ),
                 );
             }
         } catch (err: any) {
@@ -136,9 +158,9 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
             setItems((prev) =>
                 prev.map((item) =>
                     item.request_id === requestId
-                        ? { ...item, status: "idle" }  // 분석 전 상태로 되돌리기
-                        : item
-                )
+                        ? { ...item, status: "idle" } // 분석 전 상태로 되돌리기
+                        : item,
+                ),
             );
         } finally {
             setRunningId(null);
@@ -148,14 +170,20 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
     const renderStatusBadge = (status: CurrentStatus) => {
         if (status === "ready") {
             return (
-                <Badge variant="outline" className="bg-emerald-50 border-emerald-300">
+                <Badge
+                    variant="outline"
+                    className="bg-emerald-50 border-emerald-300"
+                >
                     준비완료
                 </Badge>
             );
         }
         if (status === "preparing") {
             return (
-                <Badge variant="outline" className="bg-yellow-50 border-yellow-300">
+                <Badge
+                    variant="outline"
+                    className="bg-yellow-50 border-yellow-300"
+                >
                     준비중
                 </Badge>
             );
@@ -168,12 +196,39 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
         );
     };
 
+    // 🔹 로그인 안 되어 있으면 관리자 로그인 화면 먼저 노출
+    if (!isAuthed) {
+        return (
+            <AdminLoginScreen
+                onBack={onBack}
+                onSuccess={() => {
+                    setIsAuthed(true);
+                    localStorage.setItem("beautiq_admin_authed", "true");
+                }}
+            />
+        );
+    }
+
+    // 🔹 로그인 후에만 실제 관리자 페이지 렌더
     return (
         <div className="min-h-screen bg-muted/20 py-12">
             <div className="container mx-auto max-w-5xl px-6">
-                <Button variant="ghost" onClick={onBack} className="mb-6">
-                    메인으로
-                </Button>
+                <div className="flex items-center justify-between mb-6">
+                    <Button variant="ghost" onClick={onBack}>
+                        메인으로
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            localStorage.removeItem("beautiq_admin_authed");
+                            setIsAuthed(false);
+                            toast.success("로그아웃되었습니다.");
+                        }}
+                    >
+                        로그아웃
+                    </Button>
+                </div>
 
                 <Card>
                     <CardHeader>
@@ -209,21 +264,34 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    disabled={runningId === item.request_id}
-                                                    onClick={() => handleRunAnalysis(item.request_id)}
+                                                    disabled={
+                                                        runningId === item.request_id
+                                                    }
+                                                    onClick={() =>
+                                                        handleRunAnalysis(
+                                                            item.request_id,
+                                                        )
+                                                    }
                                                 >
-                                                    {runningId === item.request_id ? "분석중..." : "분석하기"}
+                                                    {runningId === item.request_id
+                                                        ? "분석중..."
+                                                        : "분석하기"}
                                                 </Button>
 
                                                 {/* 준비완료 + report_id 존재 시 보고서 보기 */}
-                                                {item.status === "ready" && item.report_id && (
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => onOpenReportDetail(item.report_id!)}
-                                                    >
-                                                        보고서 보기
-                                                    </Button>
-                                                )}
+                                                {item.status === "ready" &&
+                                                    item.report_id && (
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                onOpenReportDetail(
+                                                                    item.report_id!,
+                                                                )
+                                                            }
+                                                        >
+                                                            보고서 보기
+                                                        </Button>
+                                                    )}
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -237,3 +305,86 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
     );
 }
 
+/**
+ * 관리자 로그인 화면
+ */
+function AdminLoginScreen({
+    onSuccess,
+    onBack,
+}: {
+    onSuccess: () => void;
+    onBack: () => void;
+}) {
+    const [password, setPassword] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!password) {
+            toast.error("관리자 비밀번호를 입력해주세요.");
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            if (!ADMIN_PASSWORD) {
+                toast.error(
+                    "환경변수 VITE_ADMIN_PASSWORD가 설정되지 않았습니다.",
+                );
+                return;
+            }
+
+            if (password !== ADMIN_PASSWORD) {
+                toast.error("관리자 비밀번호가 올바르지 않습니다.");
+                return;
+            }
+
+            toast.success("관리자 로그인 성공");
+            onSuccess();
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-muted/20 flex items-center justify-center px-4">
+            <div className="absolute top-4 left-4">
+                <Button variant="ghost" onClick={onBack}>
+                    메인으로
+                </Button>
+            </div>
+
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                    <CardTitle>관리자 로그인</CardTitle>
+                    <CardDescription>
+                        관리자 비밀번호를 입력하면 의뢰 내역 및 BM 리포트를
+                        관리할 수 있습니다.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="adminPw">관리자 비밀번호</Label>
+                            <Input
+                                id="adminPw"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="관리자 비밀번호를 입력하세요"
+                            />
+                        </div>
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={submitting}
+                        >
+                            {submitting ? "확인 중..." : "로그인"}
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
