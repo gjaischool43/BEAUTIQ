@@ -7,6 +7,12 @@ from models.report_bm import ReportBM
 from schemas.analysis import AnalysisStartResp
 from schemas.request import RequestAdminListResp, RequestAdminItem
 from services.report_service import build_bm_report_for_request
+from services.creator_report_service import build_creator_report_for_request
+from models.report_creator import ReportCreator
+from services.creator_report_service import (
+    build_creator_report_for_request,
+    creator_report_to_dict,
+)
 
 router = APIRouter()
 
@@ -36,6 +42,7 @@ def list_requests_for_admin(db: Session = Depends(get_db)):
             status = "ready"
             report_id = report.report_id
             is_exported = bool(report.is_exported)
+            channel_url = report.channel_name
 
         items.append(
             RequestAdminItem(
@@ -78,22 +85,21 @@ def start_analysis_for_request(request_id: int, db: Session = Depends(get_db)):
             detail="해당 의뢰를 찾을 수 없습니다. (request_id 불일치)"
         )
 
-    # (선택) request.status 활용 중이면 여기서 'processing' 으로 잠깐 바꿔도 됨
-    #   ex) request_status_enum 이 'submitted', 'processing', 'completed' 라고 가정:
-    # if req.status == "submitted":
-    #     req.status = "processing"
-    #     db.commit()
-    #     db.refresh(req)
-
-    # 2) 실제 BM 분석/생성 실행
-    #    - 내부에서 oliveyoung_review를 읽어오고,
-    #    - report_BM 레코드를 생성
+    channel_url = req.channel_name  # 또는 req.channel_url 이 있으면 그걸 사용
+    
     try:
-        report = build_bm_report_for_request(
+        # 2-1) BM 보고서 생성
+        bm_report = build_bm_report_for_request(
             db=db,
             request_id=request_id,
-            channel_url=None,  # 필요하면 request.channel_name 기반으로 채널 URL을 넘겨도 됨
+            channel_url=channel_url,
             topn_ings=15,
+        )
+
+        # 2-2) 크리에이터 분석 보고서 생성
+        creator_report = build_creator_report_for_request(
+            db=db,
+            request_id=request_id,
         )
     except Exception as e:
         # 분석 중 에러 났으면 500 리턴
@@ -111,5 +117,8 @@ def start_analysis_for_request(request_id: int, db: Session = Depends(get_db)):
     return AnalysisStartResp(
         request_id=request_id,
         status="ready",
+        creator_report_id= creator_report.report_creator_id,
+        
         message="분석이 완료되었습니다. (준비완료)"
     )
+
