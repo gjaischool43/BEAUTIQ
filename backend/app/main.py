@@ -9,7 +9,8 @@ app = FastAPI()
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://beautiq-1-sgzp.onrender.com",  # 실제 프론트 도메인
+    "http://localhost:3000",
+    "https://beautiq-1-sgzp.onrender.com"  # 실제 프론트 도메인
 ]
 
 app.add_middleware(
