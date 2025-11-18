@@ -29,14 +29,18 @@ interface AdminRequestItem {
     platform: string;
     channel_name: string;
     category_code: string;
+    brand_concept: string;
+    contact_method: string;
     email: string;
-
-    // 현재상태: idle(분석 전) / preparing(분석중) / ready(준비완료)
-    status: CurrentStatus; // 'preparing'은 프론트에서만 잠깐 쓰는 값
-
-    report_id: number | null; // ready 상태면 report_id 존재
+    status: CurrentStatus;
+    report_id: number | null;
     is_exported: boolean;
+    // 🔹 크리에이터 리포트 ID도 상태에 들고 있으면 나중에 편함
+    creator_report_id?: number | null;
 }
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+
 
 export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
     const [items, setItems] = useState<AdminRequestItem[]>([]);
@@ -46,7 +50,61 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
         return localStorage.getItem("beautiq_admin_authed") === "true";
     });
 
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+    const handleAnalyze = async (requestId: number) => {
+        // 1) Optimistic: 상태를 'preparing'으로 먼저 변경
+        setItems(prev =>
+            prev.map(item =>
+                item.request_id === requestId
+                    ? { ...item, status: "preparing" }
+                    : item
+            )
+        );
+
+        try {
+            const resp = await fetch(`${API_BASE}/admin/requests/${requestId}/start-analysis`, {
+                method: "POST",
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => null);
+                throw new Error(err?.detail || `분석 요청 실패 (status ${resp.status})`);
+            }
+
+            // 🔹 백엔드 AnalysisStartResp 와 맞춰서 타입 정의
+            const data = await resp.json() as {
+                request_id: number;
+                status: "ready" | "idle" | "processing";
+                report_id?: number | null;
+                creator_report_id?: number | null;
+                message?: string;
+            };
+
+            setItems(prev =>
+                prev.map(item =>
+                    item.request_id === requestId
+                        ? {
+                            ...item,
+                            status: data.status as CurrentStatus,
+                            report_id: data.report_id ?? item.report_id,
+                            creator_report_id: data.creator_report_id ?? item.creator_report_id,
+                        }
+                        : item
+                )
+            );
+
+            toast.success(data.message || "분석이 완료되었습니다.");
+        } catch (err: any) {
+            // 실패 시 다시 idle로 롤백
+            setItems(prev =>
+                prev.map(item =>
+                    item.request_id === requestId
+                        ? { ...item, status: "idle" }
+                        : item
+                )
+            );
+            toast.error(err.message || "분석 중 오류가 발생했습니다.");
+        }
+    };
 
     const fetchRequests = async () => {
         setLoading(true);
@@ -64,8 +122,8 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
                     platform: string;
                     channel_name: string;
                     category_code: string;
-                    brand_concept: string;
-                    contact_method: string;
+                    brand_concept: string;   // 🔹 추가
+                    contact_method: string;  // 🔹 추가
                     email: string;
                     status: "idle" | "ready"; // 백엔드는 두 값만 옴
                     report_id: number | null;
@@ -74,16 +132,20 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
             };
 
             // 프론트에서 CurrentStatus 로 변환 (idle / ready 그대로 사용)
+            // 프론트에서 CurrentStatus 로 변환 (idle / ready 그대로 사용)
             const normalized: AdminRequestItem[] = raw.items.map((it) => ({
                 request_id: it.request_id,
                 activity_name: it.activity_name,
                 platform: it.platform,
                 channel_name: it.channel_name,
                 category_code: it.category_code,
+                brand_concept: it.brand_concept,     // 🔹 추가
+                contact_method: it.contact_method,   // 🔹 추가
                 email: it.email,
                 status: it.status, // "idle" 또는 "ready"
                 report_id: it.report_id,
                 is_exported: it.is_exported,
+                // creator_report_id: undefined, // 나중에 백엔드에서 내려주면 여기에 매핑
             }));
 
             setItems(normalized);
@@ -268,7 +330,7 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
                                                         runningId === item.request_id
                                                     }
                                                     onClick={() =>
-                                                        handleRunAnalysis(
+                                                        handleAnalyze(
                                                             item.request_id,
                                                         )
                                                     }
