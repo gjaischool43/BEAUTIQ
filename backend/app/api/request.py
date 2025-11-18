@@ -16,7 +16,7 @@ def hash_view_pw(plain_pw: str) -> str:
 @router.post("/request", response_model=RequestCreateResp, status_code=201)
 def create_request(payload: RequestCreateReq, db: Session = Depends(get_db)):
     req = Request(
-        user_id=1,  # 나중에 로그인 시스템 생기면 실제 user_id로 교체
+        # user_id=1,  # 나중에 로그인 시스템 생기면 실제 user_id로 교체
         activity_name=payload.activity_name,
         platform=payload.platform,
         channel_name=payload.channel_name,
@@ -69,7 +69,7 @@ def create_request(payload: RequestCreateReq, db: Session = Depends(get_db)):
 def verify_view_pw(plain_pw: str, stored_hash: str) -> bool:
     # TODO: 실제 해시 검증 로직으로 교체
     # 예: return pwd_context.verify(plain_pw, stored_hash)
-    return plain_pw == stored_hash
+    return hash_view_pw(plain_pw) == stored_hash
 
 @router.post("/request/lookup", response_model=RequestLookupResp)
 def lookup_request_report(payload: RequestLookupReq, db: Session = Depends(get_db)):
