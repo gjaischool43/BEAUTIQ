@@ -6,7 +6,9 @@ from models.request import Request
 from models.report_bm import ReportBM
 from schemas.request import RequestAdminListResp, RequestAdminItem
 from schemas.request_lookup import RequestLookupReq, RequestLookupResp, RequestLookupReport
+from services.report_service import render_bm_sections_html
 import hashlib
+import json
 router = APIRouter()
 
 def hash_view_pw(plain_pw: str) -> str:
@@ -112,7 +114,16 @@ def lookup_request_report(payload: RequestLookupReq, db: Session = Depends(get_d
             report=None,
         )
 
-    # 3) 내보내기가 완료된 보고서 반환
+    # (3) contents(JSON) 에서 sections만 꺼내서 HTML로 렌더
+    try:
+        contents = json.loads(report.contents) if isinstance(report.contents, str) else report.contents
+    except Exception:
+        contents = {}
+
+    sections = contents.get("sections") or {}
+    html_body = render_bm_sections_html(sections)
+
+    # (4) HTML만 담아서 응답
     return RequestLookupResp(
         available=True,
         message="리포트가 준비되었습니다.",
@@ -120,7 +131,7 @@ def lookup_request_report(payload: RequestLookupReq, db: Session = Depends(get_d
             report_id=report.report_id,
             request_id=report.request_id,
             title=report.title,
-            contents=report.contents,
+            html=html_body,
         ),
     )
 

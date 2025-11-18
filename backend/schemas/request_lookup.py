@@ -2,7 +2,7 @@
 
 # app/schemas/request_lookup.py
 from pydantic import BaseModel, EmailStr
-from typing import Any, Dict, Optional
+from typing import Optional
 
 class RequestLookupReq(BaseModel):
     email: EmailStr
@@ -12,7 +12,7 @@ class RequestLookupReport(BaseModel):
     report_id: int
     request_id: int
     title: str | None = None
-    contents: Dict[str, Any]
+    html: str
 
 class RequestLookupResp(BaseModel):
     available: bool
