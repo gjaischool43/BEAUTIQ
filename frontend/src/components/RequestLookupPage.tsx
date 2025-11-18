@@ -4,18 +4,21 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "./ui/
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
 import { toast } from "sonner";
 
 interface RequestLookupPageProps {
     onBack: () => void;
 }
 
+// 백엔드에서 내려줄 리포트 타입
+// - html: 백엔드에서 sections만 HTML로 변환한 문자열
+// - contents: 혹시 아직 JSON 그대로 오는 경우를 대비해서 optional로 남겨둠 (백엔드 정리되면 제거해도 됨)
 interface LookupReport {
     report_id: number;
     request_id: number;
     title?: string | null;
-    contents: any;
+    html?: string | null;
+    contents?: any;
 }
 
 export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
@@ -48,7 +51,7 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                 throw new Error(err?.detail || `요청 실패 (status ${resp.status})`);
             }
 
-            const data = await resp.json() as {
+            const data = (await resp.json()) as {
                 available: boolean;
                 message: string;
                 report?: LookupReport | null;
@@ -56,7 +59,6 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
 
             if (!data.available) {
                 toast.info(data.message || "리포트가 준비중입니다.");
-                // 메인 페이지로 돌아가기
                 onBack();
                 return;
             }
@@ -120,12 +122,18 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                             <CardDescription>요약된 BM 리포트 내용입니다.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {/* contents 구조에 맞게 렌더링 로직을 나중에 커스터마이징 */}
-                            <Textarea
-                                readOnly
-                                className="min-h-[300px]"
-                                value={JSON.stringify(report.contents, null, 2)}
-                            />
+                            {/* 백엔드에서 내려주는 HTML을 그대로 렌더링 */}
+                            {report.html ? (
+                                <div
+                                    className="bm-report prose max-w-none text-sm md:text-base leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: report.html || "" }}
+                                />
+                            ) : (
+                                // 혹시 아직 html 필드를 안 내려주고 contents(JSON)만 내려오는 경우를 위한 임시 fallback
+                                <pre className="text-xs bg-muted/60 p-4 rounded-md overflow-x-auto">
+                                    {JSON.stringify(report.contents, null, 2)}
+                                </pre>
+                            )}
                         </CardContent>
                     </Card>
                 )}
@@ -133,3 +141,5 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
         </div>
     );
 }
+
+

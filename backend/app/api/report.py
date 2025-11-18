@@ -2,16 +2,35 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from core.db import get_db
 from models.report_bm import ReportBM
-from schemas.report import ReportBMDetail, ReportExportResp
+from schemas.report import ReportExportResp
+from schemas.admin_report import AdminReportDetailResp
+from services.report_service import render_bm_sections_html
+import json
 
 router = APIRouter()
 
-@router.get("/admin/report/{report_id}", response_model=ReportBMDetail)
-def get_report_detail(report_id: int, db: Session = Depends(get_db)):
-    report = db.query(ReportBM).filter(ReportBM.report_id == report_id).first()
+@router.get("/admin/report/{report_id}", response_model=AdminReportDetailResp)
+def get_admin_report_detail(report_id: int, db: Session = Depends(get_db)):
+    report = (
+        db.query(ReportBM)
+        .filter(ReportBM.report_id == report_id)
+        .first()
+    )
     if not report:
         raise HTTPException(status_code=404, detail="보고서를 찾을 수 없습니다.")
-    return report
+
+    # contents JSON에서 sections만 꺼내기
+    contents = json.loads(report.contents) if isinstance(report.contents, str) else report.contents or {}
+    sections = contents.get("sections") or {}
+    html_body = render_bm_sections_html(sections)
+
+    return AdminReportDetailResp(
+        report_id=report.report_id,
+        request_id=report.request_id,
+        title=report.title,
+        html=html_body,
+        is_exported=bool(report.is_exported),
+    )
 
 @router.post("/admin/report/{report_id}/export", response_model=ReportExportResp)
 def export_report(report_id: int, db: Session = Depends(get_db)):

@@ -7,6 +7,8 @@ from core.llm import llm_section
 from models.request import Request
 from models.oliveyoung_review import OliveyoungReview
 from models.report_bm import ReportBM
+import markdown
+import html
 
 # -----------------------------------------------------------------------------
 # 1. 헬퍼 함수들
@@ -477,3 +479,56 @@ def build_bm_report_for_request(
     db.commit()
     db.refresh(report)
     return report
+
+# -----------------------------------------------------------------------------
+# 5.필요한 부분만 JSON >> HTML 전환
+# -----------------------------------------------------------------------------
+
+# 섹션 출력 순서 고정 (원하는 순서대로)
+SECTION_ORDER = [
+    "brand_summary",             # 1. 브랜드 요약
+    "creator_analysis",          # 2. 크리에이터 채널 분석
+    "market_landscape",          # 3. 시장·경쟁 환경 분석
+    "concept_proposal",          # 4. 브랜드 콘셉트 제안
+    "product_line",              # 5. 제품 라인업 제안
+    "segmentation_positioning",  # 6. 타겟 세분화·포지셔닝
+    "brand_strategy",            # 7. 브랜드 전략
+    "channel_strategy",          # 8. 채널·콘텐츠 전략
+    "financials",                # 9. 수익·비즈니스 모델
+    "conclusion_next",           # 10. 결론·Next Step
+    "appendix",                  # 부록·참고
+]
+
+def render_bm_sections_html(sections: dict) -> str:
+    """
+    sections JSON(dict) 을 받아서 BM 리포트용 HTML 문자열로 변환.
+    - 각 섹션을 <section> 블록으로 묶고
+    - title은 <h2>, content_md는 markdown → HTML 로 변환
+    """
+    html_parts: list[str] = []
+
+    for key in SECTION_ORDER:
+        sec = sections.get(key)
+        if not sec:
+            continue
+
+        title = sec.get("title") or ""
+        content_md = sec.get("content_md") or ""
+
+        # Markdown → HTML
+        body_html = markdown.markdown(
+            content_md,
+            extensions=["extra", "sane_lists"],
+        )
+
+        block = f"""
+        <section class="bm-section bm-section--{html.escape(key)}">
+          <h2 class="bm-section__title">{html.escape(title)}</h2>
+          <div class="bm-section__body">
+            {body_html}
+          </div>
+        </section>
+        """
+        html_parts.append(block)
+
+    return "\n".join(html_parts)
