@@ -17,4 +17,4 @@ bcrypt>=4.1
 
 # OpenAI (신형 SDK, OpenAI() 사용)
 openai>=1.51
-
+markdown==3.6
