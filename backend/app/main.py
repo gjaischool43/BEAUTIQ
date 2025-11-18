@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import health, report, request
+from app.api import health, report, request, admin_request
 from core.config import ALLOWED_ORIGINS
 
 app = FastAPI()
@@ -24,6 +24,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(report.router)
 app.include_router(request.router)
+app.include_router(admin_request.router)
 
 # 3) 헬스체크
 @app.get("/healthz")
