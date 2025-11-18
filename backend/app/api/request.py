@@ -16,46 +16,48 @@ def create_request_api(payload: RequestCreate, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"서버 오류: {e}")
 
-@router.get("/admin/requests", response_model=RequestAdminListResp)
-def list_requests_for_admin(db: Session = Depends(get_db)):
-    # Request + ReportBM 를 조인해서 상태를 계산
-    q = (
-        db.query(Request, ReportBM)
-        .outerjoin(ReportBM, ReportBM.request_id == Request.request_id)
-        .order_by(Request.request_id.desc())
-    )
+# @router.get("/admin/requests", response_model=RequestAdminListResp)
+# def list_requests_for_admin(db: Session = Depends(get_db)):
+#     # Request + ReportBM 를 조인해서 상태를 계산
+#     q = (
+#         db.query(Request, ReportBM)
+#         .outerjoin(ReportBM, ReportBM.request_id == Request.request_id)
+#         .order_by(Request.request_id.desc())
+#     )
 
-    items: list[RequestAdminItem] = []
-    for req, report in q.all():
-        status = "ready" if report is not None else "preparing"
-        items.append(
-            RequestAdminItem(
-                request_id=req.request_id,
-                activity_name=req.activity_name,
-                platform=req.platform,
-                channel_name=req.channel_name,
-                category_code=req.category_code,
-                brand_concept=req.brand_concept,
-                contact_method=req.contact_method,
-                email=req.email,
-                status=status,
-                report_id=report.report_id if report else None,
-                is_exported=report.is_exported if report else False,
-            )
-        )
+#     items: list[RequestAdminItem] = []
+#     for req, report in q.all():
+#         status = "ready" if report is not None else "preparing"
+#         items.append(
+#             RequestAdminItem(
+#                 request_id=req.request_id,
+#                 activity_name=req.activity_name,
+#                 platform=req.platform,
+#                 channel_name=req.channel_name,
+#                 category_code=req.category_code,
+#                 brand_concept=req.brand_concept,
+#                 contact_method=req.contact_method,
+#                 email=req.email,
+#                 status=status,
+#                 report_id=report.report_id if report else None,
+#                 is_exported=report.is_exported if report else False,
+#             )
+#         )
 
-    return RequestAdminListResp(items=items)
+#     return RequestAdminListResp(items=items)
+# bcrypt / passlib 같은 걸 쓰고 있다면 그 함수로 교체
+def verify_view_pw(plain_pw: str, stored_hash: str) -> bool:
+    # TODO: 실제 해시 검증 로직으로 교체
+    # 예: return pwd_context.verify(plain_pw, stored_hash)
+    return plain_pw == stored_hash
 
 @router.post("/request/lookup", response_model=RequestLookupResp)
 def lookup_request_report(payload: RequestLookupReq, db: Session = Depends(get_db)):
     # 1) email + view_pw 로 의뢰 찾기
     req = (
         db.query(Request)
-        .filter(
-            Request.email == payload.email,
-            Request.view_pw == payload.view_pw,
-        )
-        .order_by(Request.created_at.desc())
+        .filter(Request.email == payload.email)
+        .order_by(Request.request_id.desc())
         .first()
     )
     if not req:
@@ -66,6 +68,15 @@ def lookup_request_report(payload: RequestLookupReq, db: Session = Depends(get_d
             report=None,
         )
 
+    #  열람 비밀번호 검증 (view_pw_hash 컬럼 사용)
+    if not verify_view_pw(payload.view_pw, req.view_pw_hash):
+        # 비밀번호가 틀려도 같은 응답
+        return RequestLookupResp(
+            available=False,
+            message="리포트가 준비중입니다.",
+            report=None,
+        )
+    
     # 2) BM 보고서 존재 여부 확인
     report = (
         db.query(ReportBM)
@@ -116,7 +127,7 @@ def list_requests_for_admin(db: Session = Depends(get_db)):
     rows = (
         db.query(Request, ReportBM)
         .outerjoin(ReportBM, ReportBM.request_id == Request.request_id)
-        .order_by(Request.created_at.desc())
+        .order_by(Request.request_id.desc())
         .all()
     )
 
