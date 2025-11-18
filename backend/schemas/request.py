@@ -1,5 +1,5 @@
 from typing import Literal, Optional, List
-from pydantic import BaseModel, EmailStr, constr
+from pydantic import BaseModel, EmailStr, constr, Field
 
 ShortStr = constr(min_length=1, max_length=200)
 LongStr  = constr(min_length=1, max_length=5000)
