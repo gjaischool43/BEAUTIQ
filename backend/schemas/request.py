@@ -6,15 +6,37 @@ LongStr  = constr(min_length=1, max_length=5000)
 
 currentStatus = Literal["idle", "ready"] ## 벡엔드에서는 두가지만 관리하자
 
-class RequestCreate(BaseModel):
-    activity_name: ShortStr
-    platform: Literal['youtube','instagram','tiktok','x','etc']
-    channel_name: ShortStr
-    category_code: Literal['skin_toner','essence_serum_ampoule','lotion','cream','mist_oil']
-    brand_concept: LongStr
-    contact_method: constr(min_length=1, max_length=120)
+Platform = Literal["youtube", "instagram", "tiktok", "x", "etc"]
+CategoryCode = Literal[
+    "skin_toner",
+    "essence_serum_ampoule",
+    "lotion",
+    "cream",
+    "mist_oil",
+]
+
+# class RequestCreate(BaseModel):
+#     activity_name: ShortStr
+#     platform: Literal['youtube','instagram','tiktok','x','etc']
+#     channel_name: ShortStr
+#     category_code: CategoryCode = Field(alias="productCategory")
+#     contact_method: constr(min_length=1, max_length=120)
+#     email: EmailStr
+#     view_pw: constr(min_length=4, max_length=128)
+
+class RequestCreateReq(BaseModel):
+    # 프론트에서 보내는 키 이름에 맞춰 alias 지정
+    activity_name: str = Field(alias="activityName")
+    platform: Platform
+    channel_name: str = Field(alias="channelName")
+    category_code: CategoryCode = Field(alias="productCategory")
+    brand_concept: str = Field(alias="brandConcept")
+    contact_method: str = Field(alias="contact")
     email: EmailStr
-    view_pw: constr(min_length=4, max_length=128)
+    view_pw: str = Field(alias="viewPassword")
+
+    class Config:
+        populate_by_name = True  # 나중에 서버 내부에서 activity_name 이름으로도 생성 가능
 
 class RequestCreateResp(BaseModel):
     request_id: int
