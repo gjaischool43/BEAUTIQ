@@ -14,3 +14,4 @@ class Request(Base):
     contact_method: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     view_pw_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    

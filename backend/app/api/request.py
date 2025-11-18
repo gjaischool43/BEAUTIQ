@@ -22,7 +22,7 @@ def list_requests_for_admin(db: Session = Depends(get_db)):
     q = (
         db.query(Request, ReportBM)
         .outerjoin(ReportBM, ReportBM.request_id == Request.request_id)
-        .order_by(Request.created_at.desc())
+        .order_by(Request.request_id.desc())
     )
 
     items: list[RequestAdminItem] = []
