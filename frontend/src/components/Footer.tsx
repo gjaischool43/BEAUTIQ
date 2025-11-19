@@ -1,54 +1,48 @@
-import { Mail, MessageCircle } from "lucide-react";
+// src/components/Footer.tsx
 
 export function Footer() {
     return (
-        <footer className="bg-muted/30 border-t border-border">
-            <div className="container mx-auto px-6 py-12">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <footer className="py-16 bg-white border-t border-gray-200">
+            <div className="max-w-[1200px] mx-auto px-6">
+
+                {/* 상단 영역 */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+
+                    {/* 브랜드 소개 */}
                     <div>
-                        <h3 className="text-primary mb-4 font-semibold">BrandLaunch AI</h3>
-                        <p className="text-muted-foreground leading-relaxed">
-                            인플루언서의 데이터 기반 리뷰를 분석하여
-                            <br />
-                            맞춤형 화장품 브랜드 론칭 전략을 제안합니다.
+                        <div
+                            className="text-xl tracking-wider mb-2"
+                            style={{ fontWeight: 300 }}
+                        >
+                            BEAUTIQ
+                        </div>
+                        <p
+                            className="text-sm text-gray-500"
+                            style={{ fontWeight: 300 }}
+                        >
+                            AI 기반 뷰티 크리에이터 브랜드 컨설팅 플랫폼
                         </p>
                     </div>
 
-                    <div>
-                        <h4 className="mb-4 font-semibold">Contact</h4>
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <Mail className="w-4 h-4" />
-                                <span>contact@brandlaunch.ai</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <MessageCircle className="w-4 h-4" />
-                                <span>카카오톡 상담</span>
-                            </div>
-                        </div>
+                    {/* Contact */}
+                    <div className="flex gap-8">
+                        <a
+                            href="mailto:contact@beautiq.ai"
+                            className="text-sm text-gray-600 hover:text-black transition-colors"
+                            style={{ fontWeight: 300 }}
+                        >
+                            contact@beautiq.ai
+                        </a>
                     </div>
 
-                    <div>
-                        <h4 className="mb-4 font-semibold">Social</h4>
-                        <div className="flex gap-4">
-                            <a
-                                href="#"
-                                className="text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                                Instagram
-                            </a>
-                            <a
-                                href="#"
-                                className="text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                                YouTube
-                            </a>
-                        </div>
-                    </div>
                 </div>
 
-                <div className="mt-8 pt-8 border-t border-border text-center text-muted-foreground text-sm">
-                    <p>© 2025 BrandLaunch AI. All rights reserved.</p>
+                {/* 하단 카피라이트 */}
+                <div
+                    className="mt-12 pt-8 border-t border-gray-200 text-xs text-gray-400 text-center"
+                    style={{ fontWeight: 300 }}
+                >
+                    © 2024 BEAUTIQ. All rights reserved.
                 </div>
             </div>
         </footer>
