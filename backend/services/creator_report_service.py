@@ -57,14 +57,21 @@ def build_creator_report_for_request(db: Session, request_id: int) -> ReportCrea
 
     channel_name = req.channel_name  # 1단계: 채널명 추출
 
+    # --- version 계산 추가 ---
+    existing_count = (
+        db.query(ReportCreator)
+        .filter(ReportCreator.request_id == request_id)
+        .count()
+    )
+    version = existing_count + 1
+
     # 2) 채널 분석 파이프라인 실행
     analysis_result = run_creator_analysis_pipeline(channel_name)
 
     rc = ReportCreator(
         request_id=request_id,
         latest_run_id=analysis_result.get("latest_run_id"),
-        version=1,  # 나중에 재분석 지원하면 +1 로직 추가
-
+        version=version,  
         title=analysis_result["title"],
         platform=analysis_result["platform"],
         channel_url=analysis_result.get("channel_url"),
