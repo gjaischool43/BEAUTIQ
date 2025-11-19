@@ -10,8 +10,8 @@ from sqlalchemy.orm import Session
 
 from models.request import Request
 from models.report_creator import ReportCreator
-from youtube_data_collector import YouTubeDataCollector
-from youtube_metrics_calculator_v2 import MetricsCalculator
+from services.youtube_data_collector import YouTubeDataCollector
+from services.youtube_metrics_calculator_v2 import MetricsCalculator
 ##----------------------------근서 코드 넣기---------------------------------------------
 
 # -----------------------------------------
