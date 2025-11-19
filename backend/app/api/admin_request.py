@@ -75,77 +75,62 @@ def start_analysis_for_request(request_id: int, db: Session = Depends(get_db)):
     """
 
     # 1) request 존재 여부 확인
-    req = (
-        db.query(Request)
-        .filter(Request.request_id == request_id)
-        .first()
-    )
+    req = db.query(Request).filter(Request.request_id == request_id).first()
     if not req:
         raise HTTPException(
             status_code=404,
             detail="해당 의뢰를 찾을 수 없습니다. (request_id 불일치)",
         )
 
-    # 2-1) BM 보고서 생성 (여기서 실패하면 바로 500)
-    try:
-        bm_report = build_bm_report_for_request(
-            db=db,
-            request_id=request_id,
-            # topn_ings=15  # 필요하면 다시 열어도 됨
-        )
-    except Exception as e:
-        # BM 쪽 에러는 반드시 알아야 하니까 exception 로그 + 500
-        logger.exception(
-            "[ADMIN] BM report build failed (request_id=%s): %s",
-            request_id,
-            e,
-        )
-        # 에러 메시지는 너무 길지 않게 잘라서 내려줌
-        msg = str(e)
-        if len(msg) > 200:
-            msg = msg[:200] + "..."
-        raise HTTPException(
-            status_code=500,
-            detail=f"BM 보고서 생성 중 오류가 발생했습니다: {msg}",
-        )
-
-    # 2-2) 크리에이터 분석 보고서 생성 (실패해도 서비스 전체는 500 안 던짐)
-    creator_report = None
-    creator_error_msg: Optional[str] = None
-
+    #
+    # ---------------------------------------------------------------------
+    # 2) ★ 크리에이터 분석을 먼저 생성해야 한다 (선행 조건)
+    # ---------------------------------------------------------------------
+    #
     try:
         creator_report = build_creator_report_for_request(
             db=db,
             request_id=request_id,
         )
     except Exception as e:
-        # 여기서만 터지는 경우: BM은 이미 생성/커밋된 상태
-        logger.exception(
-            "[ADMIN] Creator report build failed (request_id=%s): %s",
-            request_id,
-            e,
+        logger.exception("[ADMIN] Creator report build failed (request_id=%s): %s",
+                         request_id, e)
+        msg = str(e)[:200]
+        raise HTTPException(
+            status_code=500,
+            detail=f"크리에이터 분석 생성 실패: {msg}"
         )
-        msg = str(e)
-        if len(msg) > 200:
-            msg = msg[:200] + "..."
-        creator_error_msg = f"크리에이터 분석 리포트 생성 중 오류가 발생했습니다: {msg}"
 
-    # 3) 최종 응답 구성
-    #    - BM은 이미 생성됐으므로 status는 'ready'로 유지
-    #    - creator_report가 없으면 creator_report_id=None + 경고 메시지 포함
-    base_msg = "BM 분석은 정상적으로 완료되었습니다."
-    if creator_report is None and creator_error_msg:
-        final_msg = base_msg + " " + creator_error_msg
-    elif creator_report is None:
-        final_msg = base_msg + " (크리에이터 분석 리포트는 생성되지 않았습니다.)"
-    else:
-        final_msg = base_msg + " 크리에이터 분석 리포트도 생성되었습니다."
+    #
+    # ---------------------------------------------------------------------
+    # 3) ★ BM 보고서 생성 (Creator 결과 활용)
+    # ---------------------------------------------------------------------
+    #
+    try:
+        bm_report = build_bm_report_for_request(
+            db=db,
+            request_id=request_id,
+            creator_report=creator_report,        # 중요!
+        )
+    except Exception as e:
+        logger.exception("[ADMIN] BM report build failed (request_id=%s): %s",
+                         request_id, e)
+        msg = str(e)[:200]
+        raise HTTPException(
+            status_code=500,
+            detail=f"BM 보고서 생성 실패: {msg}"
+        )
 
+    #
+    # ---------------------------------------------------------------------
+    # 4) 응답
+    # ---------------------------------------------------------------------
+    #
     return AnalysisStartResp(
         request_id=request_id,
         status="ready",
-        creator_report_id=creator_report.report_creator_id if creator_report else None,
-        message=final_msg,
+        creator_report_id=creator_report.report_creator_id,
+        message="크리에이터 분석 + BM 분석 모두 완료되었습니다.",
     )
 
 
