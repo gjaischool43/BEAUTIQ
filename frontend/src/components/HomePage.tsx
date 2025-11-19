@@ -13,15 +13,13 @@ import { OperationInfo } from "./OperationInfo";
 
 interface HomePageProps {
     onRequestClick: () => void;
-    onExampleReportClick: () => void;
-    onContactClick: () => void;
+
 
 }
 
 export function HomePage({
-    onRequestClick,
-    onExampleReportClick,
-    onContactClick,
+    onRequestClick
+
 }: HomePageProps) {
     return (
         <main className="pt-24 bg-white">
@@ -30,7 +28,7 @@ export function HomePage({
                 {/* HeroSection 내부에 CTA 버튼이 있다면
                    그 쪽에서 onClick을 직접 연결해도 되지만,
                    지금 단계에서는 UI만 쓰고 동작은 밑의 CTA에서 확실히 보장 */}
-                <HeroSection onRequestClick={onContactClick} />
+                <HeroSection onRequestClick={onRequestClick} />
             </section>
 
             {/* 2. 서브 히어로/보조 설명 영역 */}
