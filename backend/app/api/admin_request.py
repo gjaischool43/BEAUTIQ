@@ -8,7 +8,7 @@ from models.report_creator import ReportCreator
 from schemas.analysis import AnalysisStartResp
 from schemas.request import RequestAdminListResp, RequestAdminItem
 from services.report_service import build_bm_report_for_request
-from services.creator_report_service import build_creator_report_for_request, creator_report_to_dict
+from services.creator_report_service import build_creator_report_for_request
 import logging
 
 router = APIRouter()
@@ -157,13 +157,48 @@ def get_creator_report_for_request(
         .first()
     )
 
+    # 생성 안 된 경우
     if creator_report is None:
         return {
             "exists": False,
-            "report": None
+            "report": None,
         }
+
+    # ORM → JSON 변환 (직접 구성)
+    report_dict = {
+        "report_creator_id": creator_report.report_creator_id,
+        "request_id": creator_report.request_id,
+        "version": creator_report.version,
+        "title": creator_report.title,
+        "platform": creator_report.platform,
+        "channel_url": creator_report.channel_url,
+        "channel_handle": creator_report.channel_handle,
+        "channel_external_id": creator_report.channel_external_id,
+
+        "blc_score": float(creator_report.blc_score) if creator_report.blc_score is not None else None,
+        "blc_grade": creator_report.blc_grade,
+        "blc_grade_label": creator_report.blc_grade_label,
+        "blc_tier": creator_report.blc_tier,
+        "subscriber_count": creator_report.subscriber_count,
+        "engagement_score": float(creator_report.engagement_score) if creator_report.engagement_score is not None else None,
+        "views_score": float(creator_report.views_score) if creator_report.views_score is not None else None,
+        "demand_score": float(creator_report.demand_score) if creator_report.demand_score is not None else None,
+        "problem_score": float(creator_report.problem_score) if creator_report.problem_score is not None else None,
+        "format_score": float(creator_report.format_score) if creator_report.format_score is not None else None,
+        "consistency_score": float(creator_report.consistency_score) if creator_report.consistency_score is not None else None,
+
+        "meta": creator_report.meta_json,
+        "executive_summary": creator_report.executive_summary_json,
+        "deep_analysis": creator_report.deep_analysis_json,
+        "blc_matching": creator_report.blc_matching_json,
+        "risk_mitigation": creator_report.risk_mitigation_json,
+
+        "created_at": creator_report.created_at,
+        "updated_at": creator_report.updated_at,
+    }
 
     return {
         "exists": True,
-        "report": creator_report_to_dict(creator_report)
+        "report": report_dict,
     }
+
