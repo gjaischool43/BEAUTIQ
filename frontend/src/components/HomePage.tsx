@@ -58,47 +58,9 @@ export function HomePage({
                 <ServiceFlow />
             </section>
 
-            {/* 7. 예시 리포트 섹션 (Header의 '예시 리포트' 스크롤 타겟) */}
-            <section id="example-report">
-                <ReportCards />
-                {/* 예시 리포트 실제 보기 버튼은 이쪽에서 콜백 호출 */}
-                <div className="max-w-[1200px] mx-auto px-6 mt-8 mb-16 flex justify-center">
-                    <Button
-                        variant="outline"
-                        size="lg"
-                        onClick={onExampleReportClick}
-                        className="px-8"
-                    >
-                        예시 리포트 열어보기
-                    </Button>
-                </div>
-            </section>
 
-            {/* 8. 운영/문의 정보 + CTA (Header의 '문의하기' 스크롤 타겟) */}
-            <section id="contact">
-                <OperationInfo />
-                {/* RequestForm 페이지로 넘어가는 실제 CTA */}
-                <div className="max-w-[1200px] mx-auto px-6 mt-8 mb-20 flex flex-col items-center gap-4">
-                    <p className="text-sm text-gray-500">
-                        웹 양식을 통해 분석 의뢰를 보내고 싶다면 아래 버튼을 눌러주세요.
-                    </p>
-                    <Button
-                        size="lg"
-                        onClick={onRequestClick}
-                        className="px-10"
-                    >
-                        의뢰서 작성하러 가기
-                    </Button>
-                    {/* 필요하면 별도의 문의 콜백도 유지 */}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onContactClick}
-                    >
-                        다른 문의 방법이 필요하신가요?
-                    </Button>
-                </div>
-            </section>
+
+
         </main>
     );
 }
