@@ -1,8 +1,10 @@
 import re, json, datetime
 from collections import Counter
 from typing import Any, Dict, List, Mapping, Optional
+
 import pandas as pd
 from sqlalchemy.orm import Session
+
 from core.llm import llm_section
 from models.request import Request
 from models.oliveyoung_review import OliveyoungReview
@@ -358,7 +360,6 @@ def build_bm_report_from_df(
         "generated_ts_str": generated_ts_str,
         "title": report_title,
         "summary_md": brand_summary_md,
-
         "brand_summary_json": section_json_map["brand_summary"],
         "creator_analysis_json": section_json_map["creator_analysis"],
         "market_landscape_json": section_json_map["market_landscape"],
@@ -370,13 +371,11 @@ def build_bm_report_from_df(
         "financials_json": section_json_map["financials"],
         "conclusion_next_json": section_json_map["conclusion_next"],
         "appendix_json": section_json_map["appendix"],
-
         "competitors_table_json": None,
         "kpi_table_json": None,
         "products_table_json": products_table_json,
         "top_products_table_md": top_table_md,
         "full_markdown": full_markdown,
-
         "contents": contents,
     }
 
@@ -384,7 +383,46 @@ def build_bm_report_from_df(
 
 
 # -----------------------------------------------------------------------------
-# 4. ★ 핵심: DB(request + oliveyoung_review) 기반으로 BM 리포트 생성/저장
+# 4. channel_name → channel_url 매핑 헬퍼
+# -----------------------------------------------------------------------------
+def resolve_channel_url_from_request(
+    db: Session,
+    request_obj: Request,
+) -> Optional[str]:
+    """
+    Request의 channel_name 등을 이용해 channel_url을 찾아오는 헬퍼.
+
+    지금은 템플릿 형태로 두고,
+    - 나중에 creator_channel 테이블,
+    - 혹은 YouTube API/기타 매핑 로직
+    을 붙일 때 이 함수만 수정하면 되도록 분리해 둠.
+    """
+    # 1) Request에 channel_url 컬럼이 나중에 생기면 우선 사용
+    if hasattr(request_obj, "channel_url"):
+        url = getattr(request_obj, "channel_url", None)
+        if url:
+            return url
+
+    channel_name = getattr(request_obj, "channel_name", None)
+    if not channel_name:
+        return None
+
+    # 2) 예시: CreatorChannel 테이블이 있다면 이런 식으로 매핑 (실제 모델 이름에 맞게 수정)
+    # from models.creator_channel import CreatorChannel
+    # creator = (
+    #     db.query(CreatorChannel)
+    #     .filter(CreatorChannel.channel_name == channel_name)
+    #     .first()
+    # )
+    # if creator and creator.channel_url:
+    #     return creator.channel_url
+
+    # TODO: 실제 매핑 로직 구현
+    return None
+
+
+# -----------------------------------------------------------------------------
+# 5. DB(request + oliveyoung_review) 기반으로 BM 리포트 생성/저장
 # -----------------------------------------------------------------------------
 def _fetch_oliveyoung_df_for_request(db: Session, request_obj: Request) -> pd.DataFrame:
     """
@@ -436,7 +474,6 @@ def _fetch_oliveyoung_df_for_request(db: Session, request_obj: Request) -> pd.Da
 def build_bm_report_for_request(
     db: Session,
     request_id: int,
-    channel_url: Optional[str] = None,
     topn_ings: int = 15,
 ) -> ReportBM:
     """
@@ -453,7 +490,10 @@ def build_bm_report_for_request(
     # 2) 카테고리 기준으로 oliveyoung_review → DF
     df = _fetch_oliveyoung_df_for_request(db, req)
 
-    # 3) DF + request 로 report_BM 컬럼 dict 생성
+    # 3) channel_name → channel_url 매핑
+    channel_url = resolve_channel_url_from_request(db, req)
+
+    # 4) DF + request 로 report_BM 컬럼 dict 생성
     col_values = build_bm_report_from_df(
         df=df,
         request_obj=req,
@@ -461,7 +501,7 @@ def build_bm_report_for_request(
         topn_ings=topn_ings,
     )
 
-    # 4) version 결정 (해당 request의 기존 리포트 개수 + 1 예시)
+    # 5) version 결정 (해당 request의 기존 리포트 개수 + 1 예시)
     existing_count = (
         db.query(ReportBM)
         .filter(ReportBM.request_id == request_id)
@@ -480,10 +520,10 @@ def build_bm_report_for_request(
     db.refresh(report)
     return report
 
-# -----------------------------------------------------------------------------
-# 5.필요한 부분만 JSON >> HTML 전환
-# -----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
+# 6. 필요한 부분만 JSON >> HTML 전환
+# -----------------------------------------------------------------------------
 # 섹션 출력 순서 고정 (원하는 순서대로)
 SECTION_ORDER = [
     "brand_summary",             # 1. 브랜드 요약
@@ -499,13 +539,14 @@ SECTION_ORDER = [
     "appendix",                  # 부록·참고
 ]
 
+
 def render_bm_sections_html(sections: dict) -> str:
     """
     sections JSON(dict) 을 받아서 BM 리포트용 HTML 문자열로 변환.
     - 각 섹션을 <section> 블록으로 묶고
     - title은 <h2>, content_md는 markdown → HTML 로 변환
     """
-    html_parts: list[str] = []
+    html_parts: List[str] = []
 
     for key in SECTION_ORDER:
         sec = sections.get(key)
