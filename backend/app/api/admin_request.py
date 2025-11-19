@@ -8,13 +8,9 @@ from schemas.analysis import AnalysisStartResp
 from schemas.request import RequestAdminListResp, RequestAdminItem
 from services.report_service import build_bm_report_for_request
 from services.creator_report_service import build_creator_report_for_request
-from models.report_creator import ReportCreator
-from services.creator_report_service import (
-    build_creator_report_for_request,
-    creator_report_to_dict,
-)
 
 router = APIRouter()
+
 
 @router.get("/admin/requests", response_model=RequestAdminListResp)
 def list_requests_for_admin(db: Session = Depends(get_db)):
@@ -38,11 +34,14 @@ def list_requests_for_admin(db: Session = Depends(get_db)):
             status: str = "idle"
             report_id = None
             is_exported = False
+            # channel_url = None  # 필요하면 이렇게 쓸 수 있음
         else:
             status = "ready"
+            # ReportBM 쪽 PK 이름이 report_id 라고 가정
             report_id = report.report_id
-            is_exported = bool(report.is_exported)
-            channel_url = report.channel_name
+            is_exported = bool(getattr(report, "is_exported", False))
+            # ❗ 기존 버그: report.channel_name 은 존재하지 않음
+            # channel_url = report.channel_url  # 나중에 응답에 포함하고 싶으면 이걸 활용
 
         items.append(
             RequestAdminItem(
@@ -54,13 +53,14 @@ def list_requests_for_admin(db: Session = Depends(get_db)):
                 brand_concept=req.brand_concept,
                 contact_method=req.contact_method or "",
                 email=req.email,
-                status=status,        # 🔹 여기서 status 세팅
+                status=status,
                 report_id=report_id,
                 is_exported=is_exported,
             )
         )
 
     return RequestAdminListResp(items=items)
+
 
 @router.post("/admin/requests/{request_id}/start-analysis", response_model=AnalysisStartResp)
 def start_analysis_for_request(request_id: int, db: Session = Depends(get_db)):
@@ -82,18 +82,24 @@ def start_analysis_for_request(request_id: int, db: Session = Depends(get_db)):
         # 의뢰가 없으면 준비중도 활성화되면 안 됨
         raise HTTPException(
             status_code=404,
-            detail="해당 의뢰를 찾을 수 없습니다. (request_id 불일치)"
+            detail="해당 의뢰를 찾을 수 없습니다. (request_id 불일치)",
         )
 
-    channel_url = req.channel_name  # 또는 req.channel_url 이 있으면 그걸 사용
-    
+    # 기존 코드에서 잘못 들어가 있던 부분 (rows, for 루프) 제거:
+    #   for req, report in rows:
+    #       channel_url = report.channel_url if report is not None else None
+    #
+    # 이 엔드포인트에서는 단일 request만 다루기 때문에,
+    # request 레코드에서 채널 URL을 가져오거나, 없으면 None으로 둔다.
+    # channel_url = getattr(req, "channel_url", None)
+
     try:
         # 2-1) BM 보고서 생성
         bm_report = build_bm_report_for_request(
             db=db,
             request_id=request_id,
-            channel_url=channel_url,
-            topn_ings=15,
+            # channel_url=channel_url, # channel_url은 서비스 함수 내부에서 결정
+            # topn_ings=15,
         )
 
         # 2-2) 크리에이터 분석 보고서 생성
@@ -117,8 +123,6 @@ def start_analysis_for_request(request_id: int, db: Session = Depends(get_db)):
     return AnalysisStartResp(
         request_id=request_id,
         status="ready",
-        creator_report_id= creator_report.report_creator_id,
-        
-        message="분석이 완료되었습니다. (준비완료)"
+        creator_report_id=creator_report.report_creator_id,
+        message="분석이 완료되었습니다. (준비완료)",
     )
-
