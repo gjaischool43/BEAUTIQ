@@ -9,6 +9,7 @@ from core.llm import llm_section
 from models.request import Request
 from models.oliveyoung_review import OliveyoungReview
 from models.report_bm import ReportBM
+from models.report_creator import ReportCreator
 import markdown
 import html
 
@@ -151,9 +152,13 @@ def make_prompts_for_bm(
     category_label: str,
     brand_concept: str,
     channel_url: Optional[str],
+    blc_category: Optional[str] = None,
+    blc_image: Optional[str] = None,
+    blc_product_type: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     각 BM 섹션별로 사용할 프롬프트 문자열 생성
+    - blc_category / blc_image / blc_product_type: 크리에이터 분석(BLC 매칭) 결과
     """
     meta_block = json.dumps(
         {
@@ -161,13 +166,18 @@ def make_prompts_for_bm(
             "category_label": category_label,
             "brand_concept": brand_concept,
             "channel_url": channel_url,
+            "blc_matching": {
+                "category": blc_category,
+                "image": blc_image,
+                "product_type": blc_product_type,
+            },
         },
         ensure_ascii=False,
         indent=2,
     )
 
     base_context = f"""
-[입력 메타]
+[입력 메타 + BLC 매칭 결과]
 {meta_block}
 
 [제품/리뷰 요약]
@@ -186,6 +196,7 @@ def make_prompts_for_bm(
 '{title}' 섹션을 작성하세요.
 
 - 인플루언서 채널/팬덤/시장 데이터를 한 장 요약하듯 정리합니다.
+- BLC 매칭 결과(적합 카테고리, 이미지, 제품 유형)를 요약에 반영하세요.
 - Bullet 기반으로, 수치/팩트 위주로 작성하세요.
 
 {base_context}
@@ -197,7 +208,19 @@ def make_prompts_for_bm(
 
 - 어떤 제품/이미지가 잘 맞는지,
 - 팬덤 언어 패턴과 기대 이미지는 무엇인지
-를 중심으로 정리하세요.
+- BLC 매칭 결과(적합 카테고리, 이미지, 제품 유형)를 연결해서 해석하세요.
+
+{base_context}
+""".strip()
+        elif key == "product_line":
+            prompts[key] = f"""
+당신은 뷰티 브랜드 BM 컨설턴트입니다.
+'{title}' 섹션을 작성하세요.
+
+- 인플루언서 특성, 카테고리, 리뷰 데이터(상위 상품/성분)를 참고하되
+  BLC 매칭 결과(적합 카테고리={blc_category}, 적합 이미지={blc_image}, 적합 제품 유형={blc_product_type})를
+  적극적으로 반영해 제품 라인업을 제안하세요.
+- Bullet 위주, 필요시 가벼운 소제목 사용.
 
 {base_context}
 """.strip()
@@ -208,6 +231,7 @@ def make_prompts_for_bm(
 
 - 인플루언서 특성, 카테고리, 리뷰 데이터(상위 상품/성분)를 참고해
   이 섹션의 핵심 인사이트와 실행 아이디어를 제안합니다.
+- BLC 매칭 결과와 어울리는 방향인지도 같이 언급해주세요.
 - Bullet 위주, 필요시 가벼운 소제목 사용.
 
 {base_context}
@@ -241,10 +265,13 @@ def _make_section_json(key: str, title: str, md: str) -> Dict[str, Any]:
 # 3. DF + request → report_BM 에 들어갈 컬럼 dict 생성
 # -----------------------------------------------------------------------------
 def build_bm_report_from_df(
-    df: pd.DataFrame,
-    request_obj: Any,
-    channel_url: Optional[str],
-    topn_ings: int = 15,
+    df,
+    request_obj,
+    channel_url,
+    topn_ings,
+    blc_category=None,
+    blc_image=None,
+    blc_product_type=None,
 ) -> Dict[str, Any]:
     """
     (DF는 이미 준비된 상태라고 가정한 버전)
@@ -295,12 +322,15 @@ def build_bm_report_from_df(
 
     # 3) 프롬프트 + LLM
     prompts = make_prompts_for_bm(
-        digest_brief=digest_brief,
-        top_table_md=top_table_md,
-        influencer_name=influencer_name,
-        category_label=category_label,
-        brand_concept=brand_concept,
-        channel_url=channel_url,
+    digest_brief=digest_brief,
+    top_table_md=top_table_md,
+    influencer_name=influencer_name,
+    category_label=category_label,
+    brand_concept=brand_concept,
+    channel_url=channel_url,
+    blc_category=blc_category,
+    blc_image=blc_image,
+    blc_product_type=blc_product_type,
     )
 
     sections_md: Dict[str, str] = {}
@@ -338,6 +368,11 @@ def build_bm_report_from_df(
             "category_label": category_label,
             "channel_url": channel_url,
             "generated_ts_str": generated_ts_str,
+            "blc_matching": {
+                "category": blc_category,
+                "image": blc_image,
+                "product_type": blc_product_type,
+            },
         },
         "digest": {
             "score_stats": digest.get("score_stats", {}),
@@ -474,6 +509,7 @@ def _fetch_oliveyoung_df_for_request(db: Session, request_obj: Request) -> pd.Da
 def build_bm_report_for_request(
     db: Session,
     request_id: int,
+    creator_report: Optional[ReportCreator] = None,
     topn_ings: int = 15,
 ) -> ReportBM:
     """
@@ -487,21 +523,55 @@ def build_bm_report_for_request(
     if not req:
         raise ValueError(f"request_id={request_id} 에 해당하는 의뢰가 없습니다.")
 
-    # 2) 카테고리 기준으로 oliveyoung_review → DF
+    # 2) creator_report 없으면 DB에서 조회
+    if creator_report is None:
+        creator_report = (
+            db.query(ReportCreator)
+            .filter(ReportCreator.request_id == request_id)
+            .order_by(ReportCreator.version.desc())
+            .first()
+        )
+    if creator_report is None:
+        raise ValueError("BM 보고서 생성 전, 크리에이터 분석 보고서가 반드시 필요합니다.")
+
+    # 3) Creator 분석 결과(BLC 매칭) 추출
+    blc_matching = creator_report.blc_matching_json or {}
+    if creator_report.blc_matching_json:
+        blc_matching = creator_report.blc_matching_json
+
+    matched_category = (
+    blc_matching.get("matching", {}).get("category")
+    or blc_matching.get("category")  # 혹시나 구버전 대비
+    )
+
+    matched_image = (
+    blc_matching.get("matching", {}).get("image")
+    or blc_matching.get("image")
+    )
+
+    matched_product_type = (
+    blc_matching.get("matching", {}).get("product_type")
+    or blc_matching.get("product_type")
+    )
+
+    # 4) 올리브영 DF 가져오기
     df = _fetch_oliveyoung_df_for_request(db, req)
 
-    # 3) channel_name → channel_url 매핑
-    channel_url = resolve_channel_url_from_request(db, req)
+    # 5) channel_name → url
+    channel_url = resolve_channel_url_from_request(db, req) or ""
 
-    # 4) DF + request 로 report_BM 컬럼 dict 생성
+    # 6) BM 생성 dict 만들기
     col_values = build_bm_report_from_df(
         df=df,
         request_obj=req,
         channel_url=channel_url,
         topn_ings=topn_ings,
+        blc_category=matched_category,
+        blc_image=matched_image,
+        blc_product_type=matched_product_type,
     )
 
-    # 5) version 결정 (해당 request의 기존 리포트 개수 + 1 예시)
+    # 7) version
     existing_count = (
         db.query(ReportBM)
         .filter(ReportBM.request_id == request_id)
