@@ -1,7 +1,7 @@
 # services/creator_report_service.py
+from __future__ import annotations
 import os
 import re
-from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, Optional
 from openai import OpenAI
