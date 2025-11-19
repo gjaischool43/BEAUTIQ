@@ -154,12 +154,6 @@ def get_creator_report_for_request(
     request_id: int,
     db: Session = Depends(get_db),
 ):
-    """
-    관리자 페이지에서 크리에이터 분석 리포트 보기용 엔드포인트
-    - 해당 request_id에 대한 최신 ReportCreator 1건을 반환
-    """
-
-    # 1) request 존재 여부 확인 (선택적이지만 있으면 에러 메시지가 명확해짐)
     req = (
         db.query(Request)
         .filter(Request.request_id == request_id)
@@ -171,20 +165,20 @@ def get_creator_report_for_request(
             detail="해당 의뢰를 찾을 수 없습니다. (request_id 불일치)",
         )
 
-    # 2) 이 의뢰에 대한 최신 크리에이터 리포트 조회
     creator_report: Optional[ReportCreator] = (
         db.query(ReportCreator)
         .filter(ReportCreator.request_id == request_id)
-        .order_by(ReportCreator.version.desc())  # version이 있다면 최신 기준
+        .order_by(ReportCreator.version.desc())
         .first()
     )
 
     if creator_report is None:
-        # 아직 크리에이터 리포트가 생성되지 않은 상태
-        raise HTTPException(
-            status_code=404,
-            detail="해당 의뢰에 대한 크리에이터 분석 리포트가 없습니다.",
-        )
+        return {
+            "exists": False,
+            "report": None
+        }
 
-    # 3) dict 형태로 변환해서 반환
-    return creator_report_to_dict(creator_report)
+    return {
+        "exists": True,
+        "report": creator_report_to_dict(creator_report)
+    }
