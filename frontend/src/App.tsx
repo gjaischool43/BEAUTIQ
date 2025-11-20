@@ -10,8 +10,6 @@ import { RequestLookupPage } from "./components/RequestLookupPage";
 import { AdminReportDetailPage } from "./components/AdminReportDetailPage";
 import { Toaster } from "./components/ui/sonner";
 
-
-
 type Page =
     | "home"
     | "request"
@@ -34,8 +32,8 @@ export default function App() {
             const el = document.getElementById(sectionId);
             if (!el) return;
 
-            // 고정 헤더 높이를 약 72px 정도로 가정하고 살짝 위 여백을 둠
-            const headerOffset = 72;
+            // 고정 헤더 높이를 약 96px(h-24)로 가정하고 살짝 위 여백을 둠
+            const headerOffset = 96;
             const rect = el.getBoundingClientRect();
             const offsetTop = rect.top + window.scrollY - headerOffset;
 
@@ -54,8 +52,6 @@ export default function App() {
 
     // 2) 관리자 페이지
     const handleAdminClick = () => {
-        // 이제는 'adminAuth' 페이지 없이,
-        // isAdminAuthed 상태에 따라 AdminPage 내부에서 로그인 화면을 보여줌
         setCurrentPage("admin");
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -67,7 +63,7 @@ export default function App() {
     };
 
     const handleServiceIntroClick = () => {
-        scrollToSection("features");          // 아래 HomePage에서 id="features"로 맞춰줄 것
+        scrollToSection("features");
     };
 
     // 4) 홈으로 돌아가기
@@ -85,12 +81,10 @@ export default function App() {
 
     // 6) 예시 보고서 보기 버튼
     const handleExampleReportClick = () => {
-        // 홈 화면으로 이동
-
         scrollToSection("example-report");
     };
 
-    //7) 로고 클릭시 hero 랜딩
+    // 7) 로고 클릭시 hero 랜딩
     const handleHero = () => {
         scrollToSection("hero");
     };
@@ -98,22 +92,18 @@ export default function App() {
     // AdminPage에서 로그인 성공 시 호출할 함수
     const handleAdminLoginSuccess = () => {
         setIsAdminAuthed(true);
-        // 이미 admin 페이지에 있으니까 currentPage는 그대로 두거나, 안전하게 다시 세팅해도 됨
         setCurrentPage("admin");
     };
 
     // AdminPage에서 로그아웃 시 호출할 함수
     const handleAdminLogout = () => {
         setIsAdminAuthed(false);
-        // 로그아웃 후에도 admin 페이지에 두면 → 로그인 화면으로 바뀜
         setCurrentPage("admin");
     };
 
     return (
-        <div className="min-h-screen flex flex-col pt-[64px] bg-[#F9F7F4] text-[#262626]">
+        <div className="min-h-screen flex flex-col pt-[96px] bg-[#F9F7F4] text-[#262626]">
             <Header
-                // 헤더의 “서비스 소개” 버튼을 onRequestClick에 물려두면
-                // 클릭 시 의뢰서 작성 페이지로 이동하게 됨
                 onServiceIntroClick={handleServiceIntroClick}
                 onRequestClick={handleRequestClick}
                 onAdminClick={handleAdminClick}
@@ -123,19 +113,12 @@ export default function App() {
             />
 
             <main className="flex-1">
-                {currentPage === "home" && (
-                    <HomePage
-
-
-
-                    />
-                )}
+                {currentPage === "home" && <HomePage />}
 
                 {currentPage === "request" && (
                     <RequestFormPage
                         onBack={handleBackToHome}
                         onSubmit={(_formData: FormData) => {
-                            // 필요하면 formData를 여기서 활용
                             setCurrentPage("home");
                         }}
                     />
@@ -150,7 +133,6 @@ export default function App() {
                         onAdminLogout={handleAdminLogout}
                     />
                 )}
-
 
                 {currentPage === "requestLookup" && (
                     <RequestLookupPage onBack={handleBackToHome} />
