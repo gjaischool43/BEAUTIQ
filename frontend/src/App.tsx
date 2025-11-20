@@ -98,10 +98,7 @@ export default function App() {
                     <HomePage
                         // 의뢰서 작성 / 지금 시작하기 버튼
                         onRequestClick={handleRequestClick}
-                        // 예시 보고서 버튼
-                        onExampleReportClick={handleExampleReportClick}
-                        // 문의하기 버튼
-                        onContactClick={handleContactClick}
+
                     />
                 )}
 
