@@ -85,6 +85,11 @@ export default function App() {
         scrollToSection("example-report");
     };
 
+    //7) 로고 클릭시 hero 랜딩
+    const handleHero = () => {
+        scrollToSection("hero");
+    }
+
     return (
         <div className="min-h-screen flex flex-col pt-[64px] bg-[#F9F7F4] text-[#262626]">
             <Header
@@ -95,6 +100,7 @@ export default function App() {
                 onAdminClick={handleAdminClick}
                 onLookupClick={handleLookupClick}
                 onExampleClick={handleExampleReportClick}
+                onLogoClick={handleHero}
             />
 
             <main className="flex-1">
