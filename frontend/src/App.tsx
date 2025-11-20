@@ -21,64 +21,68 @@ export default function App() {
     const [currentPage, setCurrentPage] = useState<Page>("home");
     const [selectedReportId, setSelectedReportId] = useState<number | null>(null);
 
+    // 공통 스크롤 헬퍼: 홈으로 전환한 뒤 특정 섹션으로 부드럽게 이동
+    const scrollToSection = (sectionId: string) => {
+        // 홈 화면으로 이동
+        setCurrentPage("home");
+
+        // 렌더가 끝난 뒤 DOM에서 섹션 찾아서 스크롤
+        setTimeout(() => {
+            const el = document.getElementById(sectionId);
+            if (!el) return;
+
+            // 고정 헤더 높이를 약 72px 정도로 가정하고 살짝 위 여백을 둠
+            const headerOffset = 72;
+            const rect = el.getBoundingClientRect();
+            const offsetTop = rect.top + window.scrollY - headerOffset;
+
+            window.scrollTo({
+                top: offsetTop,
+                behavior: "smooth",
+            });
+        }, 0);
+    };
+
     // 1) 의뢰서 작성 / 서비스소개 → 의뢰서 페이지
     const handleRequestClick = () => {
         setCurrentPage("request");
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     // 2) 관리자 페이지
     const handleAdminClick = () => {
         setCurrentPage("admin");
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     // 3) 리포트 조회(열람 비밀번호로 찾기)
     const handleLookupClick = () => {
         setCurrentPage("requestLookup");
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const handleServiceIntroClick = () => {
-        // 홈 화면으로 이동
-        setCurrentPage("home");
-
-        // 렌더 완료 후 해당 섹션으로 이동
-        setTimeout(() => {
-            const el = document.getElementById("service");
-            if (el) el.scrollIntoView({ behavior: "smooth" });
-        }, 50);
+        scrollToSection("features");          // 아래 HomePage에서 id="features"로 맞춰줄 것
     };
 
     // 4) 홈으로 돌아가기
     const handleBackToHome = () => {
         setCurrentPage("home");
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     // 5) 관리자에서 “준비완료” 상태 클릭 시 상세 리포트 페이지로
     const handleOpenReportDetail = (reportId: number) => {
         setSelectedReportId(reportId);
         setCurrentPage("adminReportDetail");
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     // 6) 예시 보고서 보기 버튼
     const handleExampleReportClick = () => {
         // 홈 화면으로 이동
-        setCurrentPage("home");
 
-        // 렌더 완료 후 해당 섹션으로 이동
-        setTimeout(() => {
-            const el = document.getElementById("examples");
-            if (el) el.scrollIntoView({ behavior: "smooth" });
-        }, 50);
-    };
-
-    // 7) 문의하기 버튼
-    const handleContactClick = () => {
-        // 문의 이메일 주소로 교체
-        window.location.href = "mailto:contact@beautiq.ai";
+        scrollToSection("example-report");
     };
 
     return (
@@ -96,7 +100,7 @@ export default function App() {
             <main className="flex-1">
                 {currentPage === "home" && (
                     <HomePage
-                    // 의뢰서 작성 / 지금 시작하기 버튼
+
 
 
                     />
