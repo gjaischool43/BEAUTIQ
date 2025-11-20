@@ -1,4 +1,8 @@
-import re, json, datetime
+# services/report_service.py
+
+import re
+import json
+import datetime
 from collections import Counter
 from typing import Any, Dict, List, Mapping, Optional
 
@@ -10,23 +14,34 @@ from models.request import Request
 from models.oliveyoung_review import OliveyoungReview
 from models.report_bm import ReportBM
 from models.report_creator import ReportCreator
+
 import markdown
 import html
+
 from scripts.skincare_focus_map import (
-    SKINCARE_ING_DB,
+    SKINCARE_ING_DB,      # 현재는 직접 사용하지 않지만, 확장 여지를 위해 가져옴
     infer_focus_tags,
     infer_product_type,
 )
 
-# -----------------------------------------------------------------------------
-# 1. 헬퍼 함수들
-# -----------------------------------------------------------------------------
+# -------------------------------------------------------------------
+# 1. 공통 헬퍼 함수들
+# -------------------------------------------------------------------
 def _tier(s: float) -> str:
     s = float(s)
-    return "S" if s >= 0.85 else "A" if s >= 0.75 else "B" if s >= 0.60 else "C"
+    if s >= 0.85:
+        return "S"
+    if s >= 0.75:
+        return "A"
+    if s >= 0.60:
+        return "B"
+    return "C"
 
 
 def md_table_from_rows(rows: List[List[Any]]) -> str:
+    """
+    2차원 리스트 → Markdown 표 문자열
+    """
     if not rows or not rows[0]:
         return ""
     head = "| " + " | ".join(map(str, rows[0])) + " |\n"
@@ -42,7 +57,7 @@ def crop(s: str, n: int) -> str:
 
 def _get_attr(obj: Any, name: str, default: Any = None) -> Any:
     """
-    request_obj 가 SQLAlchemy 모델이든 dict든 상관없이 안전하게 값 꺼내는 헬퍼
+    request_obj / creator_report 가 SQLAlchemy 모델이든 dict든 상관없이 안전하게 값 꺼내는 헬퍼
     """
     if obj is None:
         return default
@@ -133,6 +148,9 @@ def make_digest(df: pd.DataFrame, topn: int = 15) -> Dict[str, Any]:
 
 
 def _extract_title_from_md(md: str, fallback: str) -> str:
+    """
+    첫 번째 non-empty 줄을 제목으로 사용
+    """
     if not md:
         return fallback
     for line in md.splitlines():
@@ -153,9 +171,9 @@ def _make_section_json(key: str, title: str, md: str) -> Dict[str, Any]:
     }
 
 
-# -----------------------------------------------------------------------------
-# 3. DF + request → report_BM 에 들어갈 컬럼 dict 생성
-# -----------------------------------------------------------------------------
+# -------------------------------------------------------------------
+# 2. DF + Request → report_bm 컬럼 dict 생성 (BM 리포트 본체)
+# -------------------------------------------------------------------
 def build_bm_report_from_df(
     df: pd.DataFrame,
     request_obj: Any,
@@ -166,9 +184,10 @@ def build_bm_report_from_df(
     blc_product_type: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    (DF는 이미 준비된 상태라고 가정한 버전)
+    이미 준비된 DF + Request 메타 + BLC 매칭 정보를 가지고
+    report_bm 테이블에 들어갈 컬럼 dict를 구성한다.
     """
-    # 필수 컬럼 채우기
+    # 필수 컬럼 보정
     for c in ["product_id", "product_name", "key_ings", "summary3"]:
         if c not in df.columns:
             df[c] = ""
@@ -179,7 +198,7 @@ def build_bm_report_from_df(
 
     df["score"] = pd.to_numeric(df["score"], errors="coerce").fillna(0.0)
 
-    # priority 계산 (리뷰수 × 긍정비율)
+    # priority = review_cnt × share_pos (있으면 계산)
     if {"review_cnt", "share_pos"}.issubset(df.columns):
         df["review_cnt"] = pd.to_numeric(df["review_cnt"], errors="coerce").fillna(0).clip(0)
         df["share_pos"] = pd.to_numeric(df["share_pos"], errors="coerce").fillna(0.0)
@@ -187,10 +206,10 @@ def build_bm_report_from_df(
     else:
         df["priority"] = 0.0
 
-    # 1) 요약
+    # 1) 데이터 요약
     digest = make_digest(df, topn=topn_ings)
     top_key_ings = digest.get("top_key_ings", [])
-    top_tokens = [t["token"] for t in top_key_ings[:5]]  # 5~15개 적절히 조절 가능
+    top_tokens = [t["token"] for t in top_key_ings[:5]]  # 상위 5개 정도만 축으로 사용
 
     # priority 통계 및 Top10 테이블
     if df["priority"].sum() > 0:
@@ -242,7 +261,7 @@ def build_bm_report_from_df(
         else [],
     }
 
-    # 2) request 메타
+    # 2) Request 메타
     influencer_name: str = _get_attr(request_obj, "activity_name", "") or ""
     brand_concept: str = _get_attr(request_obj, "brand_concept", "") or ""
     category_code: str = _get_attr(request_obj, "category_code", "") or ""
@@ -269,7 +288,9 @@ def build_bm_report_from_df(
     }
     blc_json_str = json.dumps(BLC_INFO, ensure_ascii=False, indent=2)
 
+    # -------------------------------------------------------------------
     # 5) 섹션별 프롬프트 (1119_bm_generator_final.py 기반)
+    # -------------------------------------------------------------------
     # 0) 데이터 개요
     p0 = f"""
 제목: "# 0) 데이터 개요 및 분석 범위 (Data Overview)"
@@ -442,7 +463,7 @@ def build_bm_report_from_df(
   BLC와 리뷰 데이터가 왜 그 선택을 뒷받침하는지 설명하는 방식으로 작성하라.
 """
 
-    # 5) 가격 전략 (성분 원가까지 고려한 가격대 제안)
+    # 5) 가격 전략
     p5 = f"""
 제목: "# 5) 가격 전략 (Price Strategy)"
 
@@ -466,7 +487,7 @@ def build_bm_report_from_df(
   '1만 후반~2만 초반', '3만 중후반'과 같은 구간 단위 표현만 사용하라.
 """
 
-    # 6) 의사결정 로그 (데이터 인용 극대화)
+    # 6) 의사결정 로그
     p6 = f"""
 제목: "# 6) 의사결정 로그 (Decision Log)"
 
@@ -540,7 +561,9 @@ def build_bm_report_from_df(
 - 우선순위 Top10을 보고, 3~5개 정도의 대표 제품 타입(예: 대형 진정토너, 고보습 토너, 프리미엄 장벽케어 등)으로 묶어 설명하라.
 """
 
-    # 6) LLM 호출
+    # -------------------------------------------------------------------
+    # 6. 실제 LLM 호출
+    # -------------------------------------------------------------------
     sections_md: Dict[str, str] = {}
     for label, key, pr in [
         ("0) 데이터 개요", "data_overview", p0),
@@ -626,7 +649,7 @@ def build_bm_report_from_df(
         },
     }
 
-    # 9) report_BM 컬럼 dict 반환 (request_id, version 등은 바깥에서 세팅)
+    # 9) report_bm 컬럼 dict 반환 (request_id, version 등은 바깥에서 세팅)
     col_values: Dict[str, Any] = {
         "influencer_name": influencer_name,
         "brand_concept": brand_concept_for_col,
@@ -654,9 +677,9 @@ def build_bm_report_from_df(
     return col_values
 
 
-# -----------------------------------------------------------------------------
-# 4. channel_name → channel_url 매핑 헬퍼
-# -----------------------------------------------------------------------------
+# -------------------------------------------------------------------
+# 3. channel_name → channel_url 매핑 헬퍼 (나중 확장용)
+# -------------------------------------------------------------------
 def resolve_channel_url_from_request(
     db: Session,
     request_obj: Request,
@@ -683,9 +706,9 @@ def resolve_channel_url_from_request(
     return None
 
 
-# -----------------------------------------------------------------------------
-# 5. DB(request + oliveyoung_review) 기반으로 BM 리포트 생성/저장
-# -----------------------------------------------------------------------------
+# -------------------------------------------------------------------
+# 4. DB(request + oliveyoung_review) 기반으로 BM 리포트 생성/저장
+# -------------------------------------------------------------------
 def _fetch_oliveyoung_df_for_request(db: Session, request_obj: Request) -> pd.DataFrame:
     """
     request.category_code 에 해당하는 oliveyoung_review 를 가져와서
@@ -748,40 +771,35 @@ def build_bm_report_for_request(
     """
     1) request_id 로 request 행 조회
     2) request.category_code 에 맞는 oliveyoung_review 를 읽어 DataFrame 생성
-    3) DF + request 정보로 report_BM 컬럼 dict 생성
-    4) report_BM 레코드 생성/저장 후 반환
+    3) DF + request 정보로 report_bm 컬럼 dict 생성
+    4) report_bm 레코드 생성/저장 후 반환
     """
     # 1) request 조회
     req = db.query(Request).filter(Request.request_id == request_id).first()
     if not req:
         raise ValueError(f"request_id={request_id} 에 해당하는 의뢰가 없습니다.")
 
-    # 2) creator_report 없으면 DB에서 조회
+    # 2) creator_report 없으면 DB에서 조회 (가장 최신 버전)
     if creator_report is None:
         creator_report = (
             db.query(ReportCreator)
-            .filter(ReportCreator.request_id == request_id)
-            .order_by(ReportCreator.version.desc())
-            .first()
+                .filter(ReportCreator.request_id == request_id)
+                .order_by(ReportCreator.version.desc())
+                .first()
         )
     if creator_report is None:
         raise ValueError("BM 보고서 생성 전, 크리에이터 분석 보고서가 반드시 필요합니다.")
 
     # 3) Creator 분석 결과(BLC 매칭) 추출
     blc_matching = creator_report.blc_matching_json or {}
-    if creator_report.blc_matching_json:
-        blc_matching = creator_report.blc_matching_json
-
     matched_category = (
         blc_matching.get("matching", {}).get("category")
-        or blc_matching.get("category")  # 혹시나 구버전 대비
+        or blc_matching.get("category")
     )
-
     matched_image = (
         blc_matching.get("matching", {}).get("image")
         or blc_matching.get("image")
     )
-
     matched_product_type = (
         blc_matching.get("matching", {}).get("product_type")
         or blc_matching.get("product_type")
@@ -804,17 +822,19 @@ def build_bm_report_for_request(
         blc_product_type=matched_product_type,
     )
 
-    # 7) version
+    # 7) version 계산
     existing_count = (
         db.query(ReportBM)
-        .filter(ReportBM.request_id == request_id)
-        .count()
+            .filter(ReportBM.request_id == request_id)
+            .count()
     )
     version = existing_count + 1
 
     report = ReportBM(
         request_id=request_id,
         version=version,
+        report_creator_id=getattr(creator_report, "report_creator_id", None),
+        # latest_run_id는 필요 시 향후 파이프라인에서 세팅
         **col_values,
     )
 
@@ -824,10 +844,9 @@ def build_bm_report_for_request(
     return report
 
 
-# -----------------------------------------------------------------------------
-# 6. 필요한 부분만 JSON >> HTML 전환
-# -----------------------------------------------------------------------------
-# 섹션 출력 순서 고정 (원하는 순서대로)
+# -------------------------------------------------------------------
+# 5. BM 섹션 JSON → HTML 렌더링 헬퍼
+# -------------------------------------------------------------------
 SECTION_ORDER = [
     "data_overview",     # 0. 데이터 개요
     "brand_summary",     # 1. 브랜드 요약
@@ -842,7 +861,9 @@ SECTION_ORDER = [
 
 def render_bm_sections_html(sections: dict) -> str:
     """
-    sections JSON(dict) 을 받아서 BM 리포트용 HTML 문자열로 변환.
+    report_bm.contents['sections'] JSON(dict)를 받아서
+    BM 리포트용 HTML 문자열로 변환.
+
     - 각 섹션을 <section> 블록으로 묶고
     - title은 <h2>, content_md는 markdown → HTML 로 변환
     """
