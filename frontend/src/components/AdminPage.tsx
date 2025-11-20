@@ -14,7 +14,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { toast } from "sonner";
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "";
+
 
 interface AdminPageProps {
     onBack: () => void;
@@ -258,18 +258,7 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
         );
     };
 
-    // 🔹 로그인 안 되어 있으면 관리자 로그인 화면 먼저 노출
-    if (!isAuthed) {
-        return (
-            <AdminLoginScreen
-                onBack={onBack}
-                onSuccess={() => {
-                    setIsAuthed(true);
-                    localStorage.setItem("beautiq_admin_authed", "true");
-                }}
-            />
-        );
-    }
+
 
     // 🔹 로그인 후에만 실제 관리자 페이지 렌더
     return (
@@ -367,86 +356,3 @@ export function AdminPage({ onBack, onOpenReportDetail }: AdminPageProps) {
     );
 }
 
-/**
- * 관리자 로그인 화면
- */
-function AdminLoginScreen({
-    onSuccess,
-    onBack,
-}: {
-    onSuccess: () => void;
-    onBack: () => void;
-}) {
-    const [password, setPassword] = useState("");
-    const [submitting, setSubmitting] = useState(false);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!password) {
-            toast.error("관리자 비밀번호를 입력해주세요.");
-            return;
-        }
-
-        setSubmitting(true);
-        try {
-            if (!ADMIN_PASSWORD) {
-                toast.error(
-                    "환경변수 VITE_ADMIN_PASSWORD가 설정되지 않았습니다.",
-                );
-                return;
-            }
-
-            if (password !== ADMIN_PASSWORD) {
-                toast.error("관리자 비밀번호가 올바르지 않습니다.");
-                return;
-            }
-
-            toast.success("관리자 로그인 성공");
-            onSuccess();
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-muted/20 flex items-center justify-center px-4">
-            <div className="absolute top-4 left-4">
-                <Button variant="ghost" onClick={onBack}>
-                    메인으로
-                </Button>
-            </div>
-
-            <Card className="w-full max-w-md">
-                <CardHeader>
-                    <CardTitle>관리자 로그인</CardTitle>
-                    <CardDescription>
-                        관리자 비밀번호를 입력하면 의뢰 내역 및 BM 리포트를
-                        관리할 수 있습니다.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="adminPw">관리자 비밀번호</Label>
-                            <Input
-                                id="adminPw"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="관리자 비밀번호를 입력하세요"
-                            />
-                        </div>
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={submitting}
-                        >
-                            {submitting ? "확인 중..." : "로그인"}
-                        </Button>
-                    </form>
-                </CardContent>
-            </Card>
-        </div>
-    );
-}
