@@ -1,35 +1,39 @@
 // src/components/Header.tsx
 
-import logoImage from "../assets/f03808aa176a21f8455791e5e88653219d0cefbb.png"
+import { Button } from "./ui/button";
+import logoImage from "../assets/f03808aa176a21f8455791e5e88653219d0cefbb.png";
 interface HeaderProps {
+    onServiceIntroClick: () => void;
     onRequestClick: () => void;
     onAdminClick: () => void;
     onLookupClick: () => void;
-    onServiceIntroClick: () => void;
     onExampleClick: () => void;
     onLogoClick: () => void;
-
 }
 
 export function Header({
+    onServiceIntroClick,
     onRequestClick,
     onAdminClick,
     onLookupClick,
-    onServiceIntroClick,
     onExampleClick,
-    onLogoClick
+    onLogoClick,
 
 }: HeaderProps) {
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-            <div className="max-w-[1200px] mx-auto px-6">
-                <div className="flex items-center justify-between h-24">
+        <header className="fixed top-0 left-0 right-0 z-50 h-24 bg-[#F9F7F4]/90 backdrop-blur border-b border-[#E2D8CF]">
+            <div className="max-w-[1200px] mx-auto px-6 h-full">
+                <div className="flex items-center justify-between h-full">
                     {/* Logo */}
                     <div
-                        className="cursor-pointer"
-                        onClick={onLogoClick} // 로고 클릭 시 기존 '서비스 소개/홈' 동작 그대로 사용
+                        className="cursor-pointer flex items-center"
+                        onClick={onLogoClick}
                     >
-                        <img src={logoImage} alt="BEAUTIQ" className="h-20" />
+                        <img
+                            src={logoImage}
+                            alt="BEAUTIQ"
+                            className="h-20"
+                        />
                     </div>
 
                     {/* Navigation + 우측 액션 */}
@@ -68,13 +72,13 @@ export function Header({
                             >
                                 의뢰 조회
                             </button>
-                            <button
+                            <Button
                                 onClick={onAdminClick}
                                 className="px-4 py-2 rounded-full bg-black text-white text-sm hover:bg-gray-900 transition-colors"
                                 style={{ fontWeight: 400 }}
                             >
                                 관리자 페이지
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
