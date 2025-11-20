@@ -9,17 +9,21 @@ import { AdminPage } from "./components/AdminPage";
 import { RequestLookupPage } from "./components/RequestLookupPage";
 import { AdminReportDetailPage } from "./components/AdminReportDetailPage";
 import { Toaster } from "./components/ui/sonner";
+import { AdminAuthPage } from "./components/AdminAuthPage"
+
 
 type Page =
     | "home"
     | "request"
     | "admin"
+    | "adminAuth"
     | "requestLookup"
     | "adminReportDetail";
 
 export default function App() {
     const [currentPage, setCurrentPage] = useState<Page>("home");
     const [selectedReportId, setSelectedReportId] = useState<number | null>(null);
+    const [isAdminAuthed, setIsAdminAuthed] = useState(false);
 
     // 공통 스크롤 헬퍼: 홈으로 전환한 뒤 특정 섹션으로 부드럽게 이동
     const scrollToSection = (sectionId: string) => {
@@ -88,7 +92,14 @@ export default function App() {
     //7) 로고 클릭시 hero 랜딩
     const handleHero = () => {
         scrollToSection("hero");
-    }
+    };
+
+    // 관리자 비밀번호 인증 성공 시 호출
+    const handleAdminAuthSuccess = () => {
+        setIsAdminAuthed(true);
+        setCurrentPage("admin");
+        window.scrollTo(0, 0);
+    };
 
     return (
         <div className="min-h-screen flex flex-col pt-[64px] bg-[#F9F7F4] text-[#262626]">
@@ -119,6 +130,13 @@ export default function App() {
                             // 필요하면 formData를 여기서 활용
                             setCurrentPage("home");
                         }}
+                    />
+                )}
+
+                {currentPage === "adminAuth" && (
+                    <AdminAuthPage
+                        onBack={handleBackToHome}
+                        onSuccess={handleAdminAuthSuccess}
                     />
                 )}
 
