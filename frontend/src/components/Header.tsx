@@ -7,6 +7,7 @@ interface HeaderProps {
     onLookupClick: () => void;
     onServiceIntroClick: () => void;
     onExampleClick: () => void;
+    onLogoClick: () => void;
 
 }
 
@@ -16,6 +17,7 @@ export function Header({
     onLookupClick,
     onServiceIntroClick,
     onExampleClick,
+    onLogoClick
 
 }: HeaderProps) {
     return (
@@ -25,7 +27,7 @@ export function Header({
                     {/* Logo */}
                     <div
                         className="cursor-pointer"
-                        onClick={onServiceIntroClick} // 로고 클릭 시 기존 '서비스 소개/홈' 동작 그대로 사용
+                        onClick={onLogoClick} // 로고 클릭 시 기존 '서비스 소개/홈' 동작 그대로 사용
                     >
                         <img src={logoImage} alt="BEAUTIQ" className="h-20" />
                     </div>

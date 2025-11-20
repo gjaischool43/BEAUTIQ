@@ -4,8 +4,7 @@
 // 새로 받은 섹션 컴포넌트들
 import { HeroSection } from "./HeroSection";
 import { SubHeroSection } from "./SubHeroSection";
-import { ServiceIntro } from "./ServiceIntro";
-import { DifferentiationSection } from "./DifferentiationSection";
+
 import { FeaturesSection } from "./FeaturesSection";
 import { ServiceFlow } from "./ServiceFlow";
 import { ReportCards } from "./ReportCards";
@@ -33,11 +32,6 @@ export function HomePage({
             {/* 2. 서브 히어로/보조 설명 영역 */}
             <section>
                 <SubHeroSection />
-            </section>
-
-            {/* 4. 차별점 섹션 */}
-            <section>
-                <DifferentiationSection />
             </section>
 
             {/* 5. 기능/특징 섹션 */}
