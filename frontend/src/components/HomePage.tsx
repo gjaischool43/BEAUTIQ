@@ -35,18 +35,13 @@ export function HomePage({
                 <SubHeroSection />
             </section>
 
-            {/* 3. 서비스 소개 섹션 (Header의 '서비스 소개' 스크롤 타겟) */}
-            <section id="service-intro">
-                <ServiceIntro />
-            </section>
-
             {/* 4. 차별점 섹션 */}
             <section>
                 <DifferentiationSection />
             </section>
 
             {/* 5. 기능/특징 섹션 */}
-            <section>
+            <section id="features">
                 <FeaturesSection />
             </section>
 
