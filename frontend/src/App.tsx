@@ -82,7 +82,7 @@ export default function App() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-[#F9F7F4] text-[#262626]">
+        <div className="min-h-screen flex flex-col pt-[64px] bg-[#F9F7F4] text-[#262626]">
             <Header
                 // 헤더의 “서비스 소개” 버튼을 onRequestClick에 물려두면
                 // 클릭 시 의뢰서 작성 페이지로 이동하게 됨
@@ -96,8 +96,8 @@ export default function App() {
             <main className="flex-1">
                 {currentPage === "home" && (
                     <HomePage
-                        // 의뢰서 작성 / 지금 시작하기 버튼
-                        onRequestClick={handleRequestClick}
+                    // 의뢰서 작성 / 지금 시작하기 버튼
+
 
                     />
                 )}

@@ -1,10 +1,10 @@
 
 import heroImage from "../assets/fd47941e6b03758f16890143375d118273271944.png"
 interface HeroSectionProps {
-  onRequestClick: () => void;
+
 }
 
-export function HeroSection({ onRequestClick }: HeroSectionProps) {
+export function HeroSection({ }: HeroSectionProps) {
   return (
     <section className="relative pt-16 h-screen min-h-[600px] flex items-center justify-center">
       {/* Background Image */}
@@ -38,13 +38,7 @@ export function HeroSection({ onRequestClick }: HeroSectionProps) {
           </p>
 
           <div className="flex items-center justify-center">
-            <button
-              onClick={onRequestClick}
-              className="px-8 py-3 bg-white text-black hover:bg-gray-100 transition-all text-sm tracking-wide"
-              style={{ fontWeight: 400 }}
-            >
-              문의하기
-            </button>
+
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 // src/components/HomePage.tsx
-import { Button } from "./ui/button";
+
 
 // 새로 받은 섹션 컴포넌트들
 import { HeroSection } from "./HeroSection";
@@ -9,16 +9,15 @@ import { DifferentiationSection } from "./DifferentiationSection";
 import { FeaturesSection } from "./FeaturesSection";
 import { ServiceFlow } from "./ServiceFlow";
 import { ReportCards } from "./ReportCards";
-import { OperationInfo } from "./OperationInfo";
 
 interface HomePageProps {
-    onRequestClick: () => void;
+
 
 
 }
 
 export function HomePage({
-    onRequestClick
+
 
 }: HomePageProps) {
     return (
@@ -28,7 +27,7 @@ export function HomePage({
                 {/* HeroSection 내부에 CTA 버튼이 있다면
                    그 쪽에서 onClick을 직접 연결해도 되지만,
                    지금 단계에서는 UI만 쓰고 동작은 밑의 CTA에서 확실히 보장 */}
-                <HeroSection onRequestClick={onRequestClick} />
+                <HeroSection />
             </section>
 
             {/* 2. 서브 히어로/보조 설명 영역 */}
@@ -56,7 +55,11 @@ export function HomePage({
                 <ServiceFlow />
             </section>
 
+            {/* 7. 예시 리포트 섹션 (Header의 '예시 리포트' 스크롤 타겟) */}
+            <section id="example-report">
+                <ReportCards />
 
+            </section>
 
 
         </main>
