@@ -9,14 +9,13 @@ import { AdminPage } from "./components/AdminPage";
 import { RequestLookupPage } from "./components/RequestLookupPage";
 import { AdminReportDetailPage } from "./components/AdminReportDetailPage";
 import { Toaster } from "./components/ui/sonner";
-import { AdminAuthPage } from "./components/AdminAuthPage"
+
 
 
 type Page =
     | "home"
     | "request"
     | "admin"
-    | "adminAuth"
     | "requestLookup"
     | "adminReportDetail";
 
@@ -55,6 +54,8 @@ export default function App() {
 
     // 2) 관리자 페이지
     const handleAdminClick = () => {
+        // 이제는 'adminAuth' 페이지 없이,
+        // isAdminAuthed 상태에 따라 AdminPage 내부에서 로그인 화면을 보여줌
         setCurrentPage("admin");
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -94,11 +95,18 @@ export default function App() {
         scrollToSection("hero");
     };
 
-    // 관리자 비밀번호 인증 성공 시 호출
-    const handleAdminAuthSuccess = () => {
+    // AdminPage에서 로그인 성공 시 호출할 함수
+    const handleAdminLoginSuccess = () => {
         setIsAdminAuthed(true);
+        // 이미 admin 페이지에 있으니까 currentPage는 그대로 두거나, 안전하게 다시 세팅해도 됨
         setCurrentPage("admin");
-        window.scrollTo(0, 0);
+    };
+
+    // AdminPage에서 로그아웃 시 호출할 함수
+    const handleAdminLogout = () => {
+        setIsAdminAuthed(false);
+        // 로그아웃 후에도 admin 페이지에 두면 → 로그인 화면으로 바뀜
+        setCurrentPage("admin");
     };
 
     return (
@@ -133,19 +141,16 @@ export default function App() {
                     />
                 )}
 
-                {currentPage === "adminAuth" && (
-                    <AdminAuthPage
-                        onBack={handleBackToHome}
-                        onSuccess={handleAdminAuthSuccess}
-                    />
-                )}
-
                 {currentPage === "admin" && (
                     <AdminPage
                         onBack={handleBackToHome}
                         onOpenReportDetail={handleOpenReportDetail}
+                        isAdminAuthed={isAdminAuthed}
+                        onAdminLoginSuccess={handleAdminLoginSuccess}
+                        onAdminLogout={handleAdminLogout}
                     />
                 )}
+
 
                 {currentPage === "requestLookup" && (
                     <RequestLookupPage onBack={handleBackToHome} />
