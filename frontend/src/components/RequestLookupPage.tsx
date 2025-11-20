@@ -73,7 +73,7 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
     };
 
     return (
-        <div className="min-h-screen bg-muted/20 py-12">
+        <div className="w-full max-w-2xl mx-auto mt-20 px-4">
             <div className="container mx-auto max-w-3xl px-6">
                 <Button variant="ghost" onClick={onBack} className="mb-6">
                     메인으로
