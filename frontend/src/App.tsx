@@ -102,7 +102,7 @@ export default function App() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col pt-[96px] bg-[#F9F7F4] text-[#262626]">
+        <div className="min-h-screen bg-[#F9F7F4] text-[#262626]">
             <Header
                 onServiceIntroClick={handleServiceIntroClick}
                 onRequestClick={handleRequestClick}
@@ -112,7 +112,7 @@ export default function App() {
                 onLogoClick={handleHero}
             />
 
-            <main className="flex-1">
+            <main className="pt-[96px] min-h-[calc(100vh-96px)] flex flex-col">
                 {currentPage === "home" && <HomePage />}
 
                 {currentPage === "request" && (
