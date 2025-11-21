@@ -746,8 +746,21 @@
     overflow: hidden;
   }
 
+  .overflow-x-auto {
+    overflow-x: auto;
+  }
+
   .overflow-y-auto {
     overflow-y: auto;
+  }
+
+  .whitespace-pre-wrap {
+    white-space: pre-wrap;
+  }
+
+  .break-words {
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   .rounded-2xl {
