@@ -463,26 +463,46 @@ def build_creator_report_for_request(
         "raw_values": raw_values,
     }
 
+    # 마크다운 문법 제거 함수
+    def remove_markdown(text: str) -> str:
+        """마크다운 문법(###, ####, ** 등)을 제거합니다."""
+        if not text:
+            return ""
+        import re
+        # ###, ####, ## 등 헤더 제거
+        text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+        # **볼드** 제거
+        text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+        # *이탤릭* 제거
+        text = re.sub(r'\*([^*]+)\*', r'\1', text)
+        # `코드` 제거
+        text = re.sub(r'`([^`]+)`', r'\1', text)
+        # ---, --- 등 구분선 제거
+        text = re.sub(r'^---+$', '', text, flags=re.MULTILINE)
+        # []() 링크 제거 (링크 텍스트만 남김)
+        text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
+        return text.strip()
+
     # 섹션 JSON은 단순 구조로 (필요하면 title 필드 나중에 추가)
     executive_summary_json = {
         "key": "executive_summary",
         "title": "한 장 요약",
-        "content_md": sections.get("executive_summary", ""),
+        "content_md": remove_markdown(sections.get("executive_summary", "")),
     }
     deep_analysis_json = {
         "key": "deep_analysis",
         "title": "심층 분석",
-        "content_md": sections.get("deep_analysis", ""),
+        "content_md": remove_markdown(sections.get("deep_analysis", "")),
     }
     risk_mitigation_json = {
         "key": "risk_mitigation",
         "title": "리스크 & 대응",
-        "content_md": sections.get("risk_mitigation", ""),
+        "content_md": remove_markdown(sections.get("risk_mitigation", "")),
     }
     blc_matching_json = {
         "key": "blc_matching",
         "title": "BLC 매칭",
-        "content_md": blc_matching_section,
+        "content_md": remove_markdown(blc_matching_section),
         "matching": blc_matching,
     }
 
