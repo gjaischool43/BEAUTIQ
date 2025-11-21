@@ -18,7 +18,7 @@ def hash_view_pw(plain_pw: str) -> str:
 @router.post("/request", response_model=RequestCreateResp, status_code=201)
 def create_request(payload: RequestCreateReq, db: Session = Depends(get_db)):
     req = Request(
-        # user_id=1,  # 나중에 로그인 시스템 생기면 실제 user_id로 교체
+        user_id=1,  # 나중에 로그인 시스템 생기면 실제 user_id로 교체
         activity_name=payload.activity_name,
         platform=payload.platform,
         channel_name=payload.channel_name,
