@@ -112,7 +112,7 @@ export default function App() {
                 onLogoClick={handleHero}
             />
 
-            <main className="flex-1 pt-20">
+            <main className="flex-1">
                 {currentPage === "home" && <HomePage />}
 
                 {currentPage === "request" && (

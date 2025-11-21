@@ -92,8 +92,8 @@ function AdminLoginScreen({
     };
 
     return (
-        <div className="bg-muted/20 flex items-center justify-center px-4">
-            <div className="absolute top-20 left-4">
+        <div className="bg-muted/20 min-h-screen flex items-center justify-center px-4 pt-24 relative">
+            <div className="absolute top-28 left-4">
                 <Button variant="ghost" onClick={onBack}>
                     메인으로
                 </Button>
@@ -347,7 +347,7 @@ export function AdminPage({
 
     // 🔓 로그인 이후 → 관리자 페이지
     return (
-        <div className="bg-muted/20 py-12">
+        <div className="bg-muted/20 min-h-screen pt-24 pb-12">
             <div className="container mx-auto max-w-5xl px-6">
                 <div className="flex items-center justify-between mb-6">
                     <Button variant="ghost" onClick={onBack}>

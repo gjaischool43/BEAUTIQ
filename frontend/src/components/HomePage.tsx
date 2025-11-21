@@ -20,7 +20,7 @@ export function HomePage({
 
 }: HomePageProps) {
     return (
-        <main className="pt-24 bg-white">
+        <div className="pt-24 bg-white min-h-screen">
             {/* 1. Hero 영역 (최상단) */}
             <section>
                 {/* HeroSection 내부에 CTA 버튼이 있다면
@@ -51,6 +51,6 @@ export function HomePage({
             </section>
 
 
-        </main>
+        </div>
     );
 }
