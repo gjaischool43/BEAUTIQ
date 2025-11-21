@@ -193,7 +193,12 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                                 <TabsContent value="bm">
                                     {report.html ? (
                                         <div
-                                            className="bm-report prose max-w-none text-sm md:text-base leading-relaxed"
+                                            className="bm-report prose max-w-none text-base leading-relaxed"
+                                            style={{
+                                                '--tw-prose-body': '#374151',
+                                                '--tw-prose-headings': '#111827',
+                                                '--tw-prose-links': '#2563eb',
+                                            } as React.CSSProperties}
                                             dangerouslySetInnerHTML={{ __html: report.html || "" }}
                                         />
                                     ) : (
@@ -238,50 +243,157 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
         return JSON.stringify(section, null, 2);
     };
 
+    // 점수를 퍼센트로 변환
+    const getScorePercent = (score: number | null): number => {
+        if (score === null || score === undefined) return 0;
+        return Math.round(score);
+    };
+
+    // 등급에 따른 색상
+    const getGradeColor = (grade: string | null): string => {
+        if (!grade) return "bg-gray-100 text-gray-700";
+        const gradeUpper = grade.toUpperCase();
+        if (gradeUpper === "A" || gradeUpper.includes("GO")) return "bg-emerald-100 text-emerald-700";
+        if (gradeUpper === "B") return "bg-blue-100 text-blue-700";
+        if (gradeUpper === "C") return "bg-yellow-100 text-yellow-700";
+        return "bg-gray-100 text-gray-700";
+    };
+
     return (
         <div className="space-y-6">
-            {/* 헤더 요약 */}
-            <section className="border rounded-xl p-4 bg-white shadow-sm">
-                <h2 className="text-lg font-semibold mb-1">
-                    {report.title}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                    BLC 점수 {report.blc_score ?? "-"} / 100 · 등급 {report.blc_grade ?? "-"}
-                    {report.blc_grade_label ? ` (${report.blc_grade_label})` : ""} · {report.blc_tier ?? "-"}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                    구독자 {report.subscriber_count != null ? report.subscriber_count.toLocaleString() : "-"}명
-                </p>
+            {/* 헤더 요약 - 개선된 스타일 */}
+            <section className="border-2 border-gray-200 rounded-2xl p-6 bg-gradient-to-br from-white to-gray-50 shadow-lg">
+                <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                        <h2 className="text-2xl font-bold mb-2 text-gray-900">
+                            {report.title}
+                        </h2>
+                        <div className="flex flex-wrap items-center gap-3 mb-3">
+                            <div className={`px-4 py-2 rounded-full font-semibold ${getGradeColor(report.blc_grade)}`}>
+                                BLC 등급: {report.blc_grade ?? "-"}
+                                {report.blc_grade_label ? ` (${report.blc_grade_label})` : ""}
+                            </div>
+                            <div className="px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-semibold">
+                                Tier: {report.blc_tier ?? "-"}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <span className="font-medium">구독자: <span className="text-gray-900 font-bold">{report.subscriber_count != null ? report.subscriber_count.toLocaleString() : "-"}명</span></span>
+                        </div>
+                    </div>
+                    {/* BLC 점수 큰 표시 */}
+                    <div className="text-center ml-4">
+                        <div className="text-4xl font-bold text-gray-900 mb-1">
+                            {report.blc_score ?? "-"}
+                        </div>
+                        <div className="text-xs text-gray-500">BLC 점수</div>
+                        <div className="w-24 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all"
+                                style={{ width: `${getScorePercent(report.blc_score)}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
             </section>
 
+            {/* 점수 요약 카드 */}
+            {(report.engagement_score !== null || report.views_score !== null || report.demand_score !== null) && (
+                <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-md">
+                    <h3 className="text-lg font-bold mb-4 text-gray-900">핵심 지표</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {report.engagement_score !== null && (
+                            <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
+                                <div className="text-xs text-purple-600 font-medium mb-1">참여도 점수</div>
+                                <div className="text-2xl font-bold text-purple-700">{getScorePercent(report.engagement_score)}</div>
+                                <div className="w-full h-2 bg-purple-200 rounded-full mt-2 overflow-hidden">
+                                    <div
+                                        className="h-full bg-purple-500 transition-all"
+                                        style={{ width: `${getScorePercent(report.engagement_score)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                        {report.views_score !== null && (
+                            <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                                <div className="text-xs text-blue-600 font-medium mb-1">조회수 점수</div>
+                                <div className="text-2xl font-bold text-blue-700">{getScorePercent(report.views_score)}</div>
+                                <div className="w-full h-2 bg-blue-200 rounded-full mt-2 overflow-hidden">
+                                    <div
+                                        className="h-full bg-blue-500 transition-all"
+                                        style={{ width: `${getScorePercent(report.views_score)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                        {report.demand_score !== null && (
+                            <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200">
+                                <div className="text-xs text-emerald-600 font-medium mb-1">수요 점수</div>
+                                <div className="text-2xl font-bold text-emerald-700">{getScorePercent(report.demand_score)}</div>
+                                <div className="w-full h-2 bg-emerald-200 rounded-full mt-2 overflow-hidden">
+                                    <div
+                                        className="h-full bg-emerald-500 transition-all"
+                                        style={{ width: `${getScorePercent(report.demand_score)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                        {report.format_score !== null && (
+                            <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
+                                <div className="text-xs text-orange-600 font-medium mb-1">포맷 점수</div>
+                                <div className="text-2xl font-bold text-orange-700">{getScorePercent(report.format_score)}</div>
+                                <div className="w-full h-2 bg-orange-200 rounded-full mt-2 overflow-hidden">
+                                    <div
+                                        className="h-full bg-orange-500 transition-all"
+                                        style={{ width: `${getScorePercent(report.format_score)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
+
             {/* 1. 한 장 요약 */}
-            <section className="border rounded-xl p-4 bg-white shadow-sm overflow-hidden">
-                <h3 className="text-base font-semibold mb-2">1. 한 장 요약</h3>
-                <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+            <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-md overflow-hidden">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
+                    <h3 className="text-xl font-bold text-gray-900">1. 한 장 요약</h3>
+                </div>
+                <div className="text-base leading-relaxed whitespace-pre-wrap break-words text-gray-700 bg-gray-50 p-5 rounded-xl border border-gray-100">
                     {getContentMd(report.executive_summary)}
                 </div>
             </section>
 
             {/* 2. 채널 심층 분석 */}
-            <section className="border rounded-xl p-4 bg-white shadow-sm overflow-hidden">
-                <h3 className="text-base font-semibold mb-2">2. 채널 심층 분석</h3>
-                <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+            <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-md overflow-hidden">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-1 h-8 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
+                    <h3 className="text-xl font-bold text-gray-900">2. 채널 심층 분석</h3>
+                </div>
+                <div className="text-base leading-relaxed whitespace-pre-wrap break-words text-gray-700 bg-gray-50 p-5 rounded-xl border border-gray-100">
                     {getContentMd(report.deep_analysis)}
                 </div>
             </section>
 
             {/* 3. BLC 매칭 */}
-            <section className="border rounded-xl p-4 bg-white shadow-sm overflow-hidden">
-                <h3 className="text-base font-semibold mb-2">3. BLC 매칭</h3>
-                <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+            <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-md overflow-hidden">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-1 h-8 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full"></div>
+                    <h3 className="text-xl font-bold text-gray-900">3. BLC 매칭</h3>
+                </div>
+                <div className="text-base leading-relaxed whitespace-pre-wrap break-words text-gray-700 bg-gray-50 p-5 rounded-xl border border-gray-100">
                     {getContentMd(report.blc_matching)}
                 </div>
             </section>
 
             {/* 4. 리스크 & 대응 */}
-            <section className="border rounded-xl p-4 bg-white shadow-sm overflow-hidden">
-                <h3 className="text-base font-semibold mb-2">4. 리스크 & 대응</h3>
-                <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+            <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-md overflow-hidden">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full"></div>
+                    <h3 className="text-xl font-bold text-gray-900">4. 리스크 & 대응</h3>
+                </div>
+                <div className="text-base leading-relaxed whitespace-pre-wrap break-words text-gray-700 bg-gray-50 p-5 rounded-xl border border-gray-100">
                     {getContentMd(report.risk_mitigation)}
                 </div>
             </section>
