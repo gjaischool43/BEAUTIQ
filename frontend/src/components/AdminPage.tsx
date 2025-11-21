@@ -93,7 +93,7 @@ function AdminLoginScreen({
 
     return (
         <div className="min-h-[calc(100vh-64px)] bg-muted/20 flex items-center justify-center px-4">
-            <div className="absolute top-4 left-4">
+            <div className="absolute top-20 left-4">
                 <Button variant="ghost" onClick={onBack}>
                     메인으로
                 </Button>
