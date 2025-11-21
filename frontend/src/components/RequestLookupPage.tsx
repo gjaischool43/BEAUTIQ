@@ -6,7 +6,11 @@ import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
-
+import {
+    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+    ResponsiveContainer, Cell, PieChart, Pie, BarChart, Bar, XAxis, YAxis, Tooltip, Legend
+} from "recharts";
+import { TrendingUp, Users, Eye, Star, Award, AlertCircle } from "lucide-react";
 interface RequestLookupPageProps {
     onBack: () => void;
 }
@@ -231,28 +235,20 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
 
 function CreatorReportView({ report }: { report: CreatorReport | null }) {
     if (!report) {
-        return <div>크리에이터 분석 보고서가 아직 생성되지 않았습니다.</div>;
+        return <div className="text-center py-12 text-gray-500">크리에이터 분석 보고서가 아직 생성되지 않았습니다.</div>;
     }
 
-    // 마크다운 문법 제거 함수
     const removeMarkdown = (text: string): string => {
         if (!text) return "";
-        // ###, ####, ## 등 헤더 제거
         let cleaned = text.replace(/^#{1,6}\s+/gm, "");
-        // **볼드** 제거
         cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, "$1");
-        // *이탤릭* 제거
         cleaned = cleaned.replace(/\*([^*]+)\*/g, "$1");
-        // `코드` 제거
         cleaned = cleaned.replace(/`([^`]+)`/g, "$1");
-        // ---, --- 등 구분선 제거
         cleaned = cleaned.replace(/^---+$/gm, "");
-        // []() 링크 제거 (링크 텍스트만 남김)
         cleaned = cleaned.replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1");
         return cleaned.trim();
     };
 
-    // content_md 추출 헬퍼 함수
     const getContentMd = (section: any): string => {
         if (!section) return "";
         let content = "";
@@ -261,20 +257,16 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
         } else if (section.content_md) {
             content = section.content_md;
         } else {
-            // content_md가 없으면 JSON을 텍스트로 변환
             return JSON.stringify(section, null, 2);
         }
-        // 마크다운 문법 제거
         return removeMarkdown(content);
     };
 
-    // 점수를 퍼센트로 변환
     const getScorePercent = (score: number | null): number => {
         if (score === null || score === undefined) return 0;
         return Math.round(score);
     };
 
-    // 등급에 따른 색상
     const getGradeColor = (grade: string | null): string => {
         if (!grade) return "bg-gray-100 text-gray-700";
         const gradeUpper = grade.toUpperCase();
@@ -284,145 +276,284 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
         return "bg-gray-100 text-gray-700";
     };
 
+    // 레이더 차트 데이터
+    const radarData = [
+        { subject: '참여도', score: report.engagement_score ?? 0, fullMark: 100 },
+        { subject: '조회수', score: report.views_score ?? 0, fullMark: 100 },
+        { subject: '수요', score: report.demand_score ?? 0, fullMark: 100 },
+        { subject: '포맷', score: report.format_score ?? 0, fullMark: 100 },
+        { subject: '일관성', score: report.consistency_score ?? 0, fullMark: 100 },
+    ];
+
+    // BLC 점수 게이지용 데이터
+    const blcScore = report.blc_score ?? 0;
+    const gaugeData = [
+        { name: 'Score', value: blcScore, fill: blcScore >= 80 ? '#10b981' : blcScore >= 60 ? '#3b82f6' : '#f59e0b' },
+        { name: 'Remaining', value: 100 - blcScore, fill: '#e5e7eb' }
+    ];
+
+    // 점수 막대 그래프 데이터
+    const barData = [
+        { name: '참여도', score: report.engagement_score ?? 0, color: '#a855f7' },
+        { name: '조회수', score: report.views_score ?? 0, color: '#3b82f6' },
+        { name: '수요', score: report.demand_score ?? 0, color: '#10b981' },
+        { name: '포맷', score: report.format_score ?? 0, color: '#f97316' },
+        { name: '일관성', score: report.consistency_score ?? 0, color: '#ec4899' },
+    ];
+
     return (
-        <div className="space-y-6">
-            {/* 헤더 요약 - 개선된 스타일 */}
-            <section className="border-2 border-gray-200 rounded-2xl p-6 bg-gradient-to-br from-white to-gray-50 shadow-lg">
-                <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                        <h2 className="text-2xl font-bold mb-2 text-gray-900">
-                            {report.title}
-                        </h2>
-                        <div className="flex flex-wrap items-center gap-3 mb-3">
-                            <div className={`px-4 py-2 rounded-full font-semibold ${getGradeColor(report.blc_grade)}`}>
+        <div className="space-y-8">
+            {/* 헤더 요약 */}
+            <section className="border-2 border-gray-200 rounded-2xl p-8 bg-gradient-to-br from-white via-blue-50 to-purple-50 shadow-xl">
+                <div className="flex items-start justify-between flex-wrap gap-6">
+                    <div className="flex-1 min-w-[300px]">
+                        <div className="flex items-center gap-3 mb-3">
+                            <Award className="w-8 h-8 text-blue-600" />
+                            <h2 className="text-3xl font-bold text-gray-900">
+                                {report.title}
+                            </h2>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 mb-4">
+                            <div className={`px-5 py-2.5 rounded-full font-bold text-lg shadow-md ${getGradeColor(report.blc_grade)}`}>
                                 BLC 등급: {report.blc_grade ?? "-"}
                                 {report.blc_grade_label ? ` (${report.blc_grade_label})` : ""}
                             </div>
-                            <div className="px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-semibold">
+                            <div className="px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow-md">
                                 Tier: {report.blc_tier ?? "-"}
                             </div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                            <span className="font-medium">구독자: <span className="text-gray-900 font-bold">{report.subscriber_count != null ? report.subscriber_count.toLocaleString() : "-"}명</span></span>
+                        <div className="flex items-center gap-2 text-sm text-gray-700 bg-white/70 backdrop-blur px-4 py-3 rounded-xl">
+                            <Users className="w-5 h-5 text-blue-600" />
+                            <span className="font-semibold">구독자:</span>
+                            <span className="text-xl font-bold text-gray-900">
+                                {report.subscriber_count != null ? report.subscriber_count.toLocaleString() : "-"}명
+                            </span>
                         </div>
                     </div>
-                    {/* BLC 점수 큰 표시 */}
-                    <div className="text-center ml-4">
-                        <div className="text-4xl font-bold text-gray-900 mb-1">
-                            {report.blc_score ?? "-"}
-                        </div>
-                        <div className="text-xs text-gray-500">BLC 점수</div>
-                        <div className="w-24 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
-                            <div
-                                className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all"
-                                style={{ width: `${getScorePercent(report.blc_score)}%` }}
-                            />
+
+                    {/* BLC 점수 게이지 차트 */}
+                    <div className="text-center">
+                        <div className="relative w-40 h-40">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={gaugeData}
+                                        cx="50%"
+                                        cy="50%"
+                                        startAngle={180}
+                                        endAngle={0}
+                                        innerRadius={50}
+                                        outerRadius={70}
+                                        dataKey="value"
+                                        stroke="none"
+                                    >
+                                        {gaugeData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                        ))}
+                                    </Pie>
+                                </PieChart>
+                            </ResponsiveContainer>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <div className="text-5xl font-bold text-gray-900">
+                                    {report.blc_score ?? "-"}
+                                </div>
+                                <div className="text-xs text-gray-600 font-medium">BLC 점수</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* 점수 요약 카드 */}
+            {/* 시각화 대시보드 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 레이더 차트 */}
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-purple-600" />
+                            종합 성과 분석
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <RadarChart data={radarData}>
+                                <PolarGrid stroke="#e5e7eb" />
+                                <PolarAngleAxis
+                                    dataKey="subject"
+                                    tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
+                                />
+                                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#9ca3af', fontSize: 10 }} />
+                                <Radar
+                                    name="점수"
+                                    dataKey="score"
+                                    stroke="#8b5cf6"
+                                    fill="#8b5cf6"
+                                    fillOpacity={0.6}
+                                    strokeWidth={2}
+                                />
+                            </RadarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+
+                {/* 막대 그래프 */}
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Star className="w-5 h-5 text-orange-600" />
+                            세부 점수 비교
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={barData} layout="vertical">
+                                <XAxis type="number" domain={[0, 100]} tick={{ fill: '#6b7280', fontSize: 11 }} />
+                                <YAxis
+                                    type="category"
+                                    dataKey="name"
+                                    tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
+                                    width={60}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: '#1f2937',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        color: '#fff'
+                                    }}
+                                />
+                                <Bar dataKey="score" radius={[0, 8, 8, 0]}>
+                                    {barData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* 핵심 지표 카드 - 애니메이션 강화 */}
             {(report.engagement_score !== null || report.views_score !== null || report.demand_score !== null) && (
-                <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-md">
-                    <h3 className="text-lg font-bold mb-4 text-gray-900">핵심 지표</h3>
+                <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-lg">
+                    <h3 className="text-xl font-bold mb-6 text-gray-900 flex items-center gap-2">
+                        <Eye className="w-6 h-6 text-blue-600" />
+                        핵심 지표
+                    </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {report.engagement_score !== null && (
-                            <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
-                                <div className="text-xs text-purple-600 font-medium mb-1">참여도 점수</div>
-                                <div className="text-2xl font-bold text-purple-700">{getScorePercent(report.engagement_score)}</div>
-                                <div className="w-full h-2 bg-purple-200 rounded-full mt-2 overflow-hidden">
-                                    <div
-                                        className="h-full bg-purple-500 transition-all"
-                                        style={{ width: `${getScorePercent(report.engagement_score)}%` }}
-                                    />
-                                </div>
-                            </div>
+                            <ScoreCard
+                                title="참여도 점수"
+                                score={getScorePercent(report.engagement_score)}
+                                color="purple"
+                                icon={<Star className="w-5 h-5" />}
+                            />
                         )}
                         {report.views_score !== null && (
-                            <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
-                                <div className="text-xs text-blue-600 font-medium mb-1">조회수 점수</div>
-                                <div className="text-2xl font-bold text-blue-700">{getScorePercent(report.views_score)}</div>
-                                <div className="w-full h-2 bg-blue-200 rounded-full mt-2 overflow-hidden">
-                                    <div
-                                        className="h-full bg-blue-500 transition-all"
-                                        style={{ width: `${getScorePercent(report.views_score)}%` }}
-                                    />
-                                </div>
-                            </div>
+                            <ScoreCard
+                                title="조회수 점수"
+                                score={getScorePercent(report.views_score)}
+                                color="blue"
+                                icon={<Eye className="w-5 h-5" />}
+                            />
                         )}
                         {report.demand_score !== null && (
-                            <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200">
-                                <div className="text-xs text-emerald-600 font-medium mb-1">수요 점수</div>
-                                <div className="text-2xl font-bold text-emerald-700">{getScorePercent(report.demand_score)}</div>
-                                <div className="w-full h-2 bg-emerald-200 rounded-full mt-2 overflow-hidden">
-                                    <div
-                                        className="h-full bg-emerald-500 transition-all"
-                                        style={{ width: `${getScorePercent(report.demand_score)}%` }}
-                                    />
-                                </div>
-                            </div>
+                            <ScoreCard
+                                title="수요 점수"
+                                score={getScorePercent(report.demand_score)}
+                                color="emerald"
+                                icon={<TrendingUp className="w-5 h-5" />}
+                            />
                         )}
                         {report.format_score !== null && (
-                            <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
-                                <div className="text-xs text-orange-600 font-medium mb-1">포맷 점수</div>
-                                <div className="text-2xl font-bold text-orange-700">{getScorePercent(report.format_score)}</div>
-                                <div className="w-full h-2 bg-orange-200 rounded-full mt-2 overflow-hidden">
-                                    <div
-                                        className="h-full bg-orange-500 transition-all"
-                                        style={{ width: `${getScorePercent(report.format_score)}%` }}
-                                    />
-                                </div>
-                            </div>
+                            <ScoreCard
+                                title="포맷 점수"
+                                score={getScorePercent(report.format_score)}
+                                color="orange"
+                                icon={<Award className="w-5 h-5" />}
+                            />
                         )}
                     </div>
                 </section>
             )}
 
-            {/* 1. 한 장 요약 */}
-            <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-md overflow-hidden">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
-                    <h3 className="text-xl font-bold text-gray-900">1. 한 장 요약</h3>
-                </div>
-                <div className="text-base leading-relaxed whitespace-pre-wrap break-words text-gray-700 bg-gray-50 p-5 rounded-xl border border-gray-100">
-                    {getContentMd(report.executive_summary)}
-                </div>
-            </section>
+            {/* 텍스트 섹션들 */}
+            <ReportSection
+                title="1. 한 장 요약"
+                content={getContentMd(report.executive_summary)}
+                color="blue"
+            />
 
-            {/* 2. 채널 심층 분석 */}
-            <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-md overflow-hidden">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-1 h-8 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
-                    <h3 className="text-xl font-bold text-gray-900">2. 채널 심층 분석</h3>
-                </div>
-                <div className="text-base leading-relaxed whitespace-pre-wrap break-words text-gray-700 bg-gray-50 p-5 rounded-xl border border-gray-100">
-                    {getContentMd(report.deep_analysis)}
-                </div>
-            </section>
+            <ReportSection
+                title="2. 채널 심층 분석"
+                content={getContentMd(report.deep_analysis)}
+                color="purple"
+            />
 
-            {/* 3. BLC 매칭 */}
-            <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-md overflow-hidden">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-1 h-8 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full"></div>
-                    <h3 className="text-xl font-bold text-gray-900">3. BLC 매칭</h3>
-                </div>
-                <div className="text-base leading-relaxed whitespace-pre-wrap break-words text-gray-700 bg-gray-50 p-5 rounded-xl border border-gray-100">
-                    {getContentMd(report.blc_matching)}
-                </div>
-            </section>
+            <ReportSection
+                title="3. BLC 매칭"
+                content={getContentMd(report.blc_matching)}
+                color="emerald"
+            />
 
-            {/* 4. 리스크 & 대응 */}
-            <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-md overflow-hidden">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full"></div>
-                    <h3 className="text-xl font-bold text-gray-900">4. 리스크 & 대응</h3>
-                </div>
-                <div className="text-base leading-relaxed whitespace-pre-wrap break-words text-gray-700 bg-gray-50 p-5 rounded-xl border border-gray-100">
-                    {getContentMd(report.risk_mitigation)}
-                </div>
-            </section>
+            <ReportSection
+                title="4. 리스크 & 대응"
+                content={getContentMd(report.risk_mitigation)}
+                color="orange"
+                icon={<AlertCircle className="w-6 h-6" />}
+            />
         </div>
+    );
+}
+
+// 점수 카드 컴포넌트
+function ScoreCard({ title, score, color, icon }: { title: string; score: number; color: string; icon: React.ReactNode }) {
+    const colorMap: Record<string, { bg: string; text: string; bar: string; border: string }> = {
+        purple: { bg: 'from-purple-50 to-purple-100', text: 'text-purple-700', bar: 'bg-purple-500', border: 'border-purple-200' },
+        blue: { bg: 'from-blue-50 to-blue-100', text: 'text-blue-700', bar: 'bg-blue-500', border: 'border-blue-200' },
+        emerald: { bg: 'from-emerald-50 to-emerald-100', text: 'text-emerald-700', bar: 'bg-emerald-500', border: 'border-emerald-200' },
+        orange: { bg: 'from-orange-50 to-orange-100', text: 'text-orange-700', bar: 'bg-orange-500', border: 'border-orange-200' },
+    };
+
+    const colors = colorMap[color];
+
+    return (
+        <div className={`p-5 bg-gradient-to-br ${colors.bg} rounded-xl border ${colors.border} transform transition-all duration-300 hover:scale-105 hover:shadow-lg`}>
+            <div className={`flex items-center gap-2 ${colors.text} mb-2`}>
+                {icon}
+                <div className="text-xs font-semibold">{title}</div>
+            </div>
+            <div className={`text-3xl font-bold ${colors.text} mb-3`}>{score}</div>
+            <div className={`w-full h-3 bg-white/50 rounded-full overflow-hidden shadow-inner`}>
+                <div
+                    className={`h-full ${colors.bar} rounded-full transition-all duration-1000 ease-out`}
+                    style={{ width: `${score}%` }}
+                />
+            </div>
+        </div>
+    );
+}
+
+// 리포트 섹션 컴포넌트
+function ReportSection({ title, content, color, icon }: { title: string; content: string; color: string; icon?: React.ReactNode }) {
+    const colorMap: Record<string, string> = {
+        blue: 'from-blue-500 to-blue-600',
+        purple: 'from-purple-500 to-purple-600',
+        emerald: 'from-emerald-500 to-emerald-600',
+        orange: 'from-orange-500 to-orange-600',
+    };
+
+    return (
+        <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <div className="flex items-center gap-3 mb-4">
+                <div className={`w-1 h-10 bg-gradient-to-b ${colorMap[color]} rounded-full`}></div>
+                {icon && <div className="text-gray-700">{icon}</div>}
+                <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+            </div>
+            <div className="text-base leading-relaxed whitespace-pre-wrap break-words text-gray-700 bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl border border-gray-100">
+                {content}
+            </div>
+        </section>
     );
 }
 
