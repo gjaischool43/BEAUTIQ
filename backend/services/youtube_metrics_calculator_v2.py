@@ -1,11 +1,12 @@
 """
-YouTube Creator Analysis System - 지표 계산 모듈 V2.2 (수정됨)
+YouTube Creator Analysis System - 지표 계산 모듈 V2.4 (수정됨)
 - Tier별 벤치마크 기준 상대평가
 - 개별 지표 100점 cap, 최종 BLC 100점 cap
-- Demand Score (20점): 0.5% 이상이면 만점 (Demand per 1K views 기준)
-- Problem Score (Needs Score, 20점): 0.2% 이상이면 만점 (특정 니즈 요청 비율)
-- Format Fit Score (15점): 포맷 효과 상대 평가
-- Consistency: 주간 업로드 횟수 기준
+- Engagement Score: 벤치마크의 1.5배를 만점 기준으로 적용 (더 엄격한 평가)
+- Demand Score (15점): 0.5% 이상이면 만점 (Demand per 1K views 기준)
+- Problem Score (10점): 0.5% 이상이면 만점 (기존 0.2%에서 상향), 벤치마크 2배를 만점 기준
+- Format Fit Score (10점): 포맷 효과 상대 평가
+- Consistency (10점): 주간 업로드 횟수 기준
 - 뷰티 카테고리 전용
 """
 
@@ -285,8 +286,8 @@ class MetricsCalculator:
     
     def analyze_format_effect(self):
         """
-        [수정됨 V2.1] 포맷 효과 분석
-        - Comparison 그룹 제외
+        [수정됨 V2.3] 포맷 효과 분석
+        - 모든 포맷 키워드를 하나로 합쳐서 계산
         - 상대적 % 개선도 계산 (포맷 없음 대비)
         - 최소 샘플 수 체크
         - 0 나누기 방지
@@ -294,60 +295,65 @@ class MetricsCalculator:
         if self.videos_df.empty:
             return {}
         
-        # Comparison 제외 (3개 포맷만)
-        before_after_keywords = ['전후', '전/후', 'before', 'after', '변화', '비포', '애프터']
-        howto_keywords = ['사용법', '쓰는법', '바르는법', '활용법', '하는법', '방법', '루틴', '꿀팁']
-        review_keywords = ['리뷰', '후기', '솔직', '사용기', '체험']
+        # 모든 포맷 키워드를 하나로 합침
+        format_keywords = [
+            # Before/After 키워드
+            '전후', '전/후', 'before', 'after', '변화', '비포', '애프터',
+            # How-to 키워드
+            '사용법', '쓰는법', '바르는법', '활용법', '하는법', '방법', '루틴', '꿀팁',
+            # Review 키워드
+            '리뷰', '후기', '솔직', '사용기', '체험', '추천', '털기', '신상', '또산템', '또 산템', 
+            '추천템', '신상템', '내돈내산', '최애', '잘산템', '올리브영', '다이소'
+        ]
         
         df = self.videos_df
         
-        if 'has_before_after' not in df.columns:
-            df['has_before_after'] = df['title'].apply(lambda x: any(kw in x.lower() for kw in before_after_keywords))
-            df['has_howto'] = df['title'].apply(lambda x: any(kw in x for kw in howto_keywords))
-            df['has_review'] = df['title'].apply(lambda x: any(kw in x for kw in review_keywords))
+        # 포맷 키워드가 하나라도 포함되어 있으면 True
+        if 'has_format' not in df.columns:
+            df['has_format'] = df['title'].apply(
+                lambda x: any(kw in x.lower() if isinstance(x, str) else False for kw in format_keywords)
+            )
         
-        results = {}
+        # 포맷이 있는 영상과 없는 영상으로 분리
+        with_format = df[df['has_format'] == True]
+        without_format = df[df['has_format'] == False]
         
-        # Comparison 제거됨
-        for format_name, has_format_col in [
-            ('before_after', 'has_before_after'),
-            ('howto', 'has_howto'),
-            ('review', 'has_review')
-        ]:
-            with_format = df[df[has_format_col] == True]
-            without_format = df[df[has_format_col] == False]
-            
-            # 최소 샘플 수 체크 (통계적 신뢰성)
-            if len(with_format) < 2 or len(without_format) < 2:
-                print(f"  [MetricsCalculator] ⚠️ {format_name}: 샘플 부족 (있음:{len(with_format)}, 없음:{len(without_format)})")
-                continue
-            
-            eng_with = with_format['engagement_per_1k'].median()
-            eng_without = without_format['engagement_per_1k'].median()
-            
-            # 0 나누기 방지 및 개선이 있는 경우만 계산
-            if eng_without < 1:
-                print(f"  [MetricsCalculator] ⚠️ {format_name}: 기준값 너무 낮음 ({eng_without})")
-                continue
-            
-            if eng_with > eng_without:
-                # 상대적 % 개선도 계산
-                improvement_pct = ((eng_with - eng_without) / eng_without) * 100
-                
-                # 극단값 필터링 (200% 초과는 캡)
-                if improvement_pct > 200:
-                    print(f"  [MetricsCalculator] 🔥 {format_name}: 극단값 감지 ({improvement_pct:.1f}% → 200% 캡)")
-                    improvement_pct = 200
-                
-                results[format_name] = {
-                    'count_with': int(len(with_format)),
-                    'count_without': int(len(without_format)),
-                    'engagement_with': float(round(eng_with, 2)),
-                    'engagement_without': float(round(eng_without, 2)),
-                    'improvement_pct': float(round(improvement_pct, 2)),
-                }
-                
-                print(f"  [MetricsCalculator] ✅ {format_name}: {improvement_pct:.1f}% 개선 (있음:{eng_with:.1f}, 없음:{eng_without:.1f})")
+        # 최소 샘플 수 체크 (통계적 신뢰성)
+        if len(with_format) < 2 or len(without_format) < 2:
+            print(f"  [MetricsCalculator] ⚠️ Format: 샘플 부족 (있음:{len(with_format)}, 없음:{len(without_format)})")
+            return {}
+        
+        eng_with = with_format['engagement_per_1k'].median()
+        eng_without = without_format['engagement_per_1k'].median()
+        
+        # 0 나누기 방지 및 개선이 있는 경우만 계산
+        if eng_without < 1:
+            print(f"  [MetricsCalculator] ⚠️ Format: 기준값 너무 낮음 ({eng_without:.2f})")
+            return {}
+        
+        if eng_with <= eng_without:
+            print(f"  [MetricsCalculator] ⚠️ Format: 포맷 효과 없음 (있음:{eng_with:.2f} <= 없음:{eng_without:.2f})")
+            return {}
+        
+        # 상대적 % 개선도 계산
+        improvement_pct = ((eng_with - eng_without) / eng_without) * 100
+        
+        # 극단값 필터링 (200% 초과는 캡)
+        if improvement_pct > 200:
+            print(f"  [MetricsCalculator] 🔥 Format: 극단값 감지 ({improvement_pct:.1f}% → 200% 캡)")
+            improvement_pct = 200
+        
+        results = {
+            'format': {
+                'count_with': int(len(with_format)),
+                'count_without': int(len(without_format)),
+                'engagement_with': float(round(eng_with, 2)),
+                'engagement_without': float(round(eng_without, 2)),
+                'improvement_pct': float(round(improvement_pct, 2)),
+            }
+        }
+        
+        print(f"  [MetricsCalculator] ✅ Format: {improvement_pct:.1f}% 개선 (있음:{eng_with:.1f}, 없음:{eng_without:.1f})")
         
         return results
     
@@ -393,17 +399,20 @@ class MetricsCalculator:
     
     def calculate_blc_score(self):
         """
-        [수정됨 V2.2] BLC 점수 계산
-        - Demand Score (20점): 0.5% 이상이면 만점
-        - Problem Score (20점): 0.2% 이상이면 만점
-        - Format Fit Score (15점): 상대적 % 방식, 50% 개선 = 100점 기준 (2배 스케일링)
+        [수정됨 V2.4] BLC 점수 계산
+        - Engagement Score: 벤치마크의 1.5배를 만점 기준으로 적용 (더 엄격한 평가)
+        - Demand Score (15점): 0.5% 이상이면 만점
+        - Problem Score (10점): 0.5% 이상이면 만점 (기존 0.2%에서 상향), 벤치마크 2배를 만점 기준
+        - Format Fit Score (10점): 상대적 % 방식, 50% 개선 = 100점 기준 (2배 스케일링)
         """
         if self.videos_df.empty:
             return {'blc_score': 0.0, 'verdict': 'N/A', 'components': {}, 'tier': self.tier}
 
         # 1. Engagement Score (30%)
+        # [수정됨 V2.4] 더 엄격한 기준 적용: 벤치마크의 1.5배를 만점 기준으로 설정
         eng_median = self.videos_df['engagement_per_1k'].median()
-        eng_score = min((eng_median / self.benchmark['engagement_per_1k']) * 100, 100)
+        engagement_benchmark_adjusted = self.benchmark['engagement_per_1k'] * 1.5  # 벤치마크 1.5배를 만점 기준
+        eng_score = min((eng_median / engagement_benchmark_adjusted) * 100, 100)
         
         # 2. Views Score (25%)
         vpd_median = self.videos_df['views_per_day'].median()
@@ -428,55 +437,32 @@ class MetricsCalculator:
         problem_rate_median = self.videos_df['problem_rate'].median()
         benchmark_problem_rate = self.benchmark['problem_rate']
         
-        # 만점 기준: 0.2% 이상이면 만점 (니즈가 강한 채널)
-        PROBLEM_MAX_THRESHOLD = 0.002  # 0.2% = 0.002
+        # [수정됨 V2.4] 더 엄격한 기준 적용: 만점 기준을 0.5% (0.005)로 상향 조정
+        PROBLEM_MAX_THRESHOLD = 0.005  # 0.5% = 0.005 (기존 0.2%에서 상향)
         
         if problem_rate_median >= PROBLEM_MAX_THRESHOLD:
             problem_score = 100.0
         elif benchmark_problem_rate > 0:
-            # 벤치마크 대비 상대 평가
-            problem_score = (problem_rate_median / benchmark_problem_rate) * 100
+            # 벤치마크 대비 상대 평가 (더 엄격하게: 벤치마크의 2배를 만점 기준으로 간주)
+            problem_rate_benchmark_adjusted = benchmark_problem_rate * 2.0  # 벤치마크 2배를 만점 기준
+            problem_score = (problem_rate_median / problem_rate_benchmark_adjusted) * 100
         else:
             problem_score = 0
             
         problem_score = min(problem_score, 100)
         
-        # 5. Format Fit Score (10%) - [수정됨 V2.2]
+        # 5. Format Fit Score (10%) - [수정됨 V2.3: 통합 포맷 계산]
         format_effects = self.analyze_format_effect()
-        format_score = 0
-        format_count = 0
-        format_insufficient_samples = []  # 샘플 부족한 포맷 추적
         
-        if format_effects:
-            for format_name, data in format_effects.items():
-                improvement_pct = data['improvement_pct']
-                count_with = data.get('count_with', 0)
-                count_without = data.get('count_without', 0)
-                
-                # 샘플 부족 체크
-                if count_with < 5 or count_without < 5:
-                    format_insufficient_samples.append({
-                        'format': format_name,
-                        'count_with': count_with,
-                        'count_without': count_without
-                    })
-                
-                # 50% 개선 = 100점 (2배 스케일링)
-                score = min(improvement_pct * 2, 100)
-                
-                format_score += score
-                format_count += 1
+        if format_effects and 'format' in format_effects:
+            format_data = format_effects['format']
+            improvement_pct = format_data['improvement_pct']
             
-            format_score = format_score / format_count if format_count > 0 else 50
+            # 50% 개선 = 100점 (2배 스케일링)
+            format_score = min(improvement_pct * 2, 100)
         else:
-            format_score = 50  # 기본값
-            print(f"  [MetricsCalculator] ⚠️ Format Score: 포맷 효과 분석 불가 (샘플 부족)")
-        
-        # 샘플 부족 경고 출력
-        if format_insufficient_samples:
-            print(f"  [MetricsCalculator] ⚠️ Format Score: 다음 포맷들은 샘플 부족 (신뢰도 낮음):")
-            for item in format_insufficient_samples:
-                print(f"     - {item['format']}: 있음 {item['count_with']}개, 없음 {item['count_without']}개")
+            format_score = 50  # 기본값 (포맷 효과 분석 불가)
+            print(f"  [MetricsCalculator] ⚠️ Format Score: 50점 (기본값) - 포맷 효과 분석 불가")
         
         format_score = min(format_score, 100)
         
@@ -493,7 +479,6 @@ class MetricsCalculator:
         consistency_score = min(consistency_score, 100)
         
         # 최종 BLC 점수 (가중 평균)
-        # [수정됨 V2.2] 만점 기준 추가: Demand 0.5% 이상, Problem 0.2% 이상
         blc = (
             eng_score * 0.30 +
             views_score * 0.25 +
