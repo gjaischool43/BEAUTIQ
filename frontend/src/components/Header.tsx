@@ -21,7 +21,7 @@ export function Header({
 
 }: HeaderProps) {
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 h-24 bg-[#F9F7F4]/90 backdrop-blur border-b border-[#E2D8CF]">
+        <header className="fixed top-0 left-0 right-0 z-50 h-24 bg-white/80 backdrop-blur-md border-b border-gray-100">
             <div className="max-w-[1200px] mx-auto px-6 h-full">
                 <div className="flex items-center justify-between h-full">
                     {/* Logo */}
