@@ -159,7 +159,7 @@ export function AdminReportDetailPage({ reportId, onBack }: AdminReportDetailPag
                         </Button>
                     </CardHeader>
 
-                    <CardContent>
+                    <CardContent className="overflow-hidden">
                         <Tabs defaultValue="bm" className="w-full">
                             <TabsList className="mb-4">
                                 <TabsTrigger value="bm">브랜드 BM 보고서</TabsTrigger>
@@ -205,6 +205,15 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
         return <div>크리에이터 분석 보고서가 아직 생성되지 않았습니다.</div>;
     }
 
+    // content_md 추출 헬퍼 함수
+    const getContentMd = (section: any): string => {
+        if (!section) return "";
+        if (typeof section === "string") return section;
+        if (section.content_md) return section.content_md;
+        // content_md가 없으면 JSON을 텍스트로 변환
+        return JSON.stringify(section, null, 2);
+    };
+
     return (
         <div className="space-y-6">
             {/* 헤더 요약 */}
@@ -222,36 +231,35 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
             </section>
 
             {/* 1. 한 장 요약 */}
-            <section className="border rounded-xl p-4 bg-white shadow-sm">
+            <section className="border rounded-xl p-4 bg-white shadow-sm overflow-hidden">
                 <h3 className="text-base font-semibold mb-2">1. 한 장 요약</h3>
-                {/* TODO: executive_summary 구조에 맞게 실제 내용 렌더링 */}
-                <pre className="text-xs bg-muted/40 p-3 rounded-md overflow-x-auto">
-                    {JSON.stringify(report.executive_summary, null, 2)}
-                </pre>
+                <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                    {getContentMd(report.executive_summary)}
+                </div>
             </section>
 
             {/* 2. 채널 심층 분석 */}
-            <section className="border rounded-xl p-4 bg-white shadow-sm">
+            <section className="border rounded-xl p-4 bg-white shadow-sm overflow-hidden">
                 <h3 className="text-base font-semibold mb-2">2. 채널 심층 분석</h3>
-                <pre className="text-xs bg-muted/40 p-3 rounded-md overflow-x-auto">
-                    {JSON.stringify(report.deep_analysis, null, 2)}
-                </pre>
+                <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                    {getContentMd(report.deep_analysis)}
+                </div>
             </section>
 
             {/* 3. BLC 매칭 */}
-            <section className="border rounded-xl p-4 bg-white shadow-sm">
+            <section className="border rounded-xl p-4 bg-white shadow-sm overflow-hidden">
                 <h3 className="text-base font-semibold mb-2">3. BLC 매칭</h3>
-                <pre className="text-xs bg-muted/40 p-3 rounded-md overflow-x-auto">
-                    {JSON.stringify(report.blc_matching, null, 2)}
-                </pre>
+                <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                    {getContentMd(report.blc_matching)}
+                </div>
             </section>
 
             {/* 4. 리스크 & 대응 */}
-            <section className="border rounded-xl p-4 bg-white shadow-sm">
+            <section className="border rounded-xl p-4 bg-white shadow-sm overflow-hidden">
                 <h3 className="text-base font-semibold mb-2">4. 리스크 & 대응</h3>
-                <pre className="text-xs bg-muted/40 p-3 rounded-md overflow-x-auto">
-                    {JSON.stringify(report.risk_mitigation, null, 2)}
-                </pre>
+                <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                    {getContentMd(report.risk_mitigation)}
+                </div>
             </section>
         </div>
     );
