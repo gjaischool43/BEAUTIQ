@@ -92,14 +92,13 @@ function AdminLoginScreen({
     };
 
     return (
-        <div className="bg-muted/20 min-h-screen flex items-center justify-center px-4 pt-24 relative">
-            <div className="absolute top-28 left-4">
-                <Button variant="ghost" onClick={onBack}>
+        <div className="bg-muted/20 min-h-screen flex items-center justify-center pt-24">
+            <div className="w-full max-w-3xl mx-auto px-6">
+                <Button variant="ghost" onClick={onBack} className="mb-6">
                     메인으로
                 </Button>
-            </div>
 
-            <Card className="w-full max-w-md">
+                <Card className="w-full max-w-md mx-auto">
                 <CardHeader>
                     <CardTitle>관리자 로그인</CardTitle>
                     <CardDescription>
@@ -129,6 +128,7 @@ function AdminLoginScreen({
                     </form>
                 </CardContent>
             </Card>
+            </div>
         </div>
     );
 }
@@ -348,7 +348,7 @@ export function AdminPage({
     // 🔓 로그인 이후 → 관리자 페이지
     return (
         <div className="bg-muted/20 min-h-screen pt-24 pb-12">
-            <div className="container mx-auto max-w-5xl px-6">
+            <div className="w-full max-w-5xl mx-auto px-6">
                 <div className="flex items-center justify-between mb-6">
                     <Button variant="ghost" onClick={onBack}>
                         메인으로

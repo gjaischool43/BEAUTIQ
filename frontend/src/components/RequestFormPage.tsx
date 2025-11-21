@@ -135,178 +135,176 @@ export function RequestFormPage({ onBack, onSubmit }: RequestFormPageProps) {
 
     return (
         <div className="min-h-screen flex justify-center pt-24 pb-12">
-            <div className="w-full max-w-2xl mx-auto px-4">
-                <div className="container mx-auto px-6 max-w-3xl">
-                    <Button variant="ghost" onClick={onBack} className="mb-6">
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        돌아가기
-                    </Button>
+            <div className="w-full max-w-3xl mx-auto px-6">
+                <Button variant="ghost" onClick={onBack} className="mb-6">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    돌아가기
+                </Button>
 
-                    <DataQualityGuide />
+                <DataQualityGuide />
 
-                    {/* 의뢰서 작성 폼 */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>의뢰서 작성</CardTitle>
-                            <CardDescription>
-                                아래 항목을 모두 입력해주세요. 입력하신 내용은 BM 보고서 작성에 활용됩니다.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                {/* 활동명 */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="activityName">
-                                        활동명 <span className="text-destructive">*</span>
-                                    </Label>
-                                    <Input
-                                        id="activityName"
-                                        placeholder="예) 뷰티 크리에이터 김OO"
-                                        value={formData.activityName}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, activityName: e.target.value })
-                                        }
-                                    />
-                                </div>
+                {/* 의뢰서 작성 폼 */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>의뢰서 작성</CardTitle>
+                        <CardDescription>
+                            아래 항목을 모두 입력해주세요. 입력하신 내용은 BM 보고서 작성에 활용됩니다.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* 활동명 */}
+                            <div className="space-y-2">
+                                <Label htmlFor="activityName">
+                                    활동명 <span className="text-destructive">*</span>
+                                </Label>
+                                <Input
+                                    id="activityName"
+                                    placeholder="예) 뷰티 크리에이터 김OO"
+                                    value={formData.activityName}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, activityName: e.target.value })
+                                    }
+                                />
+                            </div>
 
-                                {/* 플랫폼 (네이티브 select) */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="platform">
-                                        플랫폼 <span className="text-destructive">*</span>
-                                    </Label>
-                                    <select
-                                        id="platform"
-                                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                                        value={formData.platform}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, platform: e.target.value as Platform })
-                                        }
-                                    >
-                                        <option value="" disabled>
-                                            플랫폼을 선택하세요
+                            {/* 플랫폼 (네이티브 select) */}
+                            <div className="space-y-2">
+                                <Label htmlFor="platform">
+                                    플랫폼 <span className="text-destructive">*</span>
+                                </Label>
+                                <select
+                                    id="platform"
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                    value={formData.platform}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, platform: e.target.value as Platform })
+                                    }
+                                >
+                                    <option value="" disabled>
+                                        플랫폼을 선택하세요
+                                    </option>
+                                    {PLATFORM_OPTIONS.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                            {opt === "x"
+                                                ? "X(트위터)"
+                                                : opt.charAt(0).toUpperCase() + opt.slice(1)}
                                         </option>
-                                        {PLATFORM_OPTIONS.map((opt) => (
-                                            <option key={opt} value={opt}>
-                                                {opt === "x"
-                                                    ? "X(트위터)"
-                                                    : opt.charAt(0).toUpperCase() + opt.slice(1)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                    ))}
+                                </select>
+                            </div>
 
-                                {/* 채널명 */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="channelName">
-                                        채널명 <span className="text-destructive">*</span>
-                                    </Label>
-                                    <Input
-                                        id="channelName"
-                                        placeholder="예) YouTube 링크 또는 Instagram 계정"
-                                        value={formData.channelName}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, channelName: e.target.value })
-                                        }
-                                    />
-                                </div>
+                            {/* 채널명 */}
+                            <div className="space-y-2">
+                                <Label htmlFor="channelName">
+                                    채널명 <span className="text-destructive">*</span>
+                                </Label>
+                                <Input
+                                    id="channelName"
+                                    placeholder="예) YouTube 링크 또는 Instagram 계정"
+                                    value={formData.channelName}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, channelName: e.target.value })
+                                    }
+                                />
+                            </div>
 
-                                {/* 제품 카테고리 (네이티브 select) */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="productCategory">
-                                        제품 카테고리 <span className="text-destructive">*</span>
-                                    </Label>
-                                    <select
-                                        id="productCategory"
-                                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                                        value={formData.productCategory}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                productCategory: e.target.value as CategoryCode,
-                                            })
-                                        }
-                                    >
-                                        <option value="" disabled>
-                                            카테고리를 선택해주세요
-                                        </option>
-                                        <option value="skin_toner">스킨/토너</option>
-                                        <option value="essence_serum_ampoule">에센스/세럼/앰플</option>
-                                        <option value="lotion">로션</option>
-                                        <option value="cream">크림</option>
-                                        <option value="mist_oil">미스트/오일</option>
-                                    </select>
-                                </div>
+                            {/* 제품 카테고리 (네이티브 select) */}
+                            <div className="space-y-2">
+                                <Label htmlFor="productCategory">
+                                    제품 카테고리 <span className="text-destructive">*</span>
+                                </Label>
+                                <select
+                                    id="productCategory"
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                    value={formData.productCategory}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            productCategory: e.target.value as CategoryCode,
+                                        })
+                                    }
+                                >
+                                    <option value="" disabled>
+                                        카테고리를 선택해주세요
+                                    </option>
+                                    <option value="skin_toner">스킨/토너</option>
+                                    <option value="essence_serum_ampoule">에센스/세럼/앰플</option>
+                                    <option value="lotion">로션</option>
+                                    <option value="cream">크림</option>
+                                    <option value="mist_oil">미스트/오일</option>
+                                </select>
+                            </div>
 
-                                {/* 브랜드 콘셉트 */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="brandConcept">
-                                        브랜드 콘셉트 <span className="text-destructive">*</span>
-                                    </Label>
-                                    <Textarea
-                                        id="brandConcept"
-                                        placeholder="원하시는 브랜드 콘셉트나 방향을 자유롭게 작성해주세요"
-                                        value={formData.brandConcept}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, brandConcept: e.target.value })
-                                        }
-                                        rows={5}
-                                    />
-                                </div>
+                            {/* 브랜드 콘셉트 */}
+                            <div className="space-y-2">
+                                <Label htmlFor="brandConcept">
+                                    브랜드 콘셉트 <span className="text-destructive">*</span>
+                                </Label>
+                                <Textarea
+                                    id="brandConcept"
+                                    placeholder="원하시는 브랜드 콘셉트나 방향을 자유롭게 작성해주세요"
+                                    value={formData.brandConcept}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, brandConcept: e.target.value })
+                                    }
+                                    rows={5}
+                                />
+                            </div>
 
-                                {/* 소통 연락처 */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="contact">
-                                        소통 연락처 <span className="text-destructive">*</span>
-                                    </Label>
-                                    <Input
-                                        id="contact"
-                                        placeholder="예) 010-1234-5678"
-                                        value={formData.contact}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, contact: e.target.value })
-                                        }
-                                    />
-                                </div>
+                            {/* 소통 연락처 */}
+                            <div className="space-y-2">
+                                <Label htmlFor="contact">
+                                    소통 연락처 <span className="text-destructive">*</span>
+                                </Label>
+                                <Input
+                                    id="contact"
+                                    placeholder="예) 010-1234-5678"
+                                    value={formData.contact}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, contact: e.target.value })
+                                    }
+                                />
+                            </div>
 
-                                {/* 이메일 */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">
-                                        이메일 <span className="text-destructive">*</span>
-                                    </Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="example@email.com"
-                                        value={formData.email}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, email: e.target.value })
-                                        }
-                                    />
-                                </div>
+                            {/* 이메일 */}
+                            <div className="space-y-2">
+                                <Label htmlFor="email">
+                                    이메일 <span className="text-destructive">*</span>
+                                </Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="example@email.com"
+                                    value={formData.email}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, email: e.target.value })
+                                    }
+                                />
+                            </div>
 
-                                {/* 열람 비밀번호 */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="viewPassword">
-                                        열람 비밀번호 <span className="text-destructive">*</span>
-                                    </Label>
-                                    <Input
-                                        id="viewPassword"
-                                        type="password"
-                                        placeholder="보고서 열람용 비밀번호 (최소 4자)"
-                                        value={formData.viewPassword}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, viewPassword: e.target.value })
-                                        }
-                                    />
-                                </div>
+                            {/* 열람 비밀번호 */}
+                            <div className="space-y-2">
+                                <Label htmlFor="viewPassword">
+                                    열람 비밀번호 <span className="text-destructive">*</span>
+                                </Label>
+                                <Input
+                                    id="viewPassword"
+                                    type="password"
+                                    placeholder="보고서 열람용 비밀번호 (최소 4자)"
+                                    value={formData.viewPassword}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, viewPassword: e.target.value })
+                                    }
+                                />
+                            </div>
 
-                                <Button type="submit" className="w-full" size="lg" disabled={submitting}>
-                                    {submitting ? "제출 중..." : "제출하기"}
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
-                </div>
+                            <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                                {submitting ? "제출 중..." : "제출하기"}
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

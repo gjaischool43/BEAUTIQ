@@ -125,7 +125,7 @@ export function AdminReportDetailPage({ reportId, onBack }: AdminReportDetailPag
     if (loading || !report) {
         return (
             <div className="min-h-screen bg-muted/20 pt-24 pb-12">
-                <div className="container mx-auto max-w-4xl px-6">
+                <div className="w-full max-w-4xl mx-auto px-6">
                     <Button variant="ghost" onClick={onBack} className="mb-6">
                         의뢰 목록으로
                     </Button>
@@ -137,7 +137,7 @@ export function AdminReportDetailPage({ reportId, onBack }: AdminReportDetailPag
 
     return (
         <div className="min-h-screen bg-muted/20 pt-24 pb-12">
-            <div className="container mx-auto max-w-4xl px-6">
+            <div className="w-full max-w-4xl mx-auto px-6">
                 <Button variant="ghost" onClick={onBack} className="mb-6">
                     의뢰 목록으로
                 </Button>
