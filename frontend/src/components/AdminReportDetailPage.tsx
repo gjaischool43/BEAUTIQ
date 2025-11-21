@@ -205,13 +205,38 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
         return <div>크리에이터 분석 보고서가 아직 생성되지 않았습니다.</div>;
     }
 
+    // 마크다운 문법 제거 함수
+    const removeMarkdown = (text: string): string => {
+        if (!text) return "";
+        // ###, ####, ## 등 헤더 제거
+        let cleaned = text.replace(/^#{1,6}\s+/gm, "");
+        // **볼드** 제거
+        cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, "$1");
+        // *이탤릭* 제거
+        cleaned = cleaned.replace(/\*([^*]+)\*/g, "$1");
+        // `코드` 제거
+        cleaned = cleaned.replace(/`([^`]+)`/g, "$1");
+        // ---, --- 등 구분선 제거
+        cleaned = cleaned.replace(/^---+$/gm, "");
+        // []() 링크 제거 (링크 텍스트만 남김)
+        cleaned = cleaned.replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1");
+        return cleaned.trim();
+    };
+
     // content_md 추출 헬퍼 함수
     const getContentMd = (section: any): string => {
         if (!section) return "";
-        if (typeof section === "string") return section;
-        if (section.content_md) return section.content_md;
-        // content_md가 없으면 JSON을 텍스트로 변환
-        return JSON.stringify(section, null, 2);
+        let content = "";
+        if (typeof section === "string") {
+            content = section;
+        } else if (section.content_md) {
+            content = section.content_md;
+        } else {
+            // content_md가 없으면 JSON을 텍스트로 변환
+            return JSON.stringify(section, null, 2);
+        }
+        // 마크다운 문법 제거
+        return removeMarkdown(content);
     };
 
     return (
