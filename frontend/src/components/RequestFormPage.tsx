@@ -134,8 +134,8 @@ export function RequestFormPage({ onBack, onSubmit }: RequestFormPageProps) {
     };
 
     return (
-        <div className="min-h-screen flex justify-center">
-            <div className="w-full max-w-2xl mx-auto mt-20 px-4">
+        <div className="min-h-screen flex justify-center pt-24 pb-12">
+            <div className="w-full max-w-2xl mx-auto px-4">
                 <div className="container mx-auto px-6 max-w-3xl">
                     <Button variant="ghost" onClick={onBack} className="mb-6">
                         <ArrowLeft className="w-4 h-4 mr-2" />

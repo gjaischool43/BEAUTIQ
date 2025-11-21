@@ -73,8 +73,9 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
     };
 
     return (
-        <div className="w-full max-w-2xl mx-auto mt-20 px-4">
-            <div className="container mx-auto max-w-3xl px-6">
+        <div className="min-h-screen pt-24 pb-12">
+            <div className="w-full max-w-2xl mx-auto px-4">
+                <div className="container mx-auto max-w-3xl px-6">
                 <Button variant="ghost" onClick={onBack} className="mb-6">
                     메인으로
                 </Button>
@@ -137,6 +138,7 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                         </CardContent>
                     </Card>
                 )}
+                </div>
             </div>
         </div>
     );

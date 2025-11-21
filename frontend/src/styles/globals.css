@@ -125,7 +125,6 @@
   }
 
   body {
-    padding-top: 6rem;
     @apply bg-background text-foreground;
   }
 }
