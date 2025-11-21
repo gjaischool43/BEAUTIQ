@@ -94,7 +94,7 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
 
             const fetchedReport = data.report ?? null;
             setReport(fetchedReport);
-            
+
             // 크리에이터 분석 보고서도 함께 조회
             if (fetchedReport?.request_id) {
                 setCreatorLoading(true);
@@ -120,7 +120,7 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                     setCreatorLoading(false);
                 }
             }
-            
+
             toast.success("리포트를 불러왔습니다.");
         } catch (err: any) {
             toast.error(err.message || "서버 오류가 발생했습니다.");
@@ -136,41 +136,45 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                     메인으로
                 </Button>
 
-                <Card className="mb-8">
-                    <CardHeader>
-                        <CardTitle>의뢰 조회</CardTitle>
-                        <CardDescription>
-                            의뢰 시 입력하신 이메일과 열람 비밀번호로 BM 보고서를 조회할 수 있습니다.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="email">이메일</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="example@email.com"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="viewPw">열람 비밀번호</Label>
-                                <Input
-                                    id="viewPw"
-                                    type="password"
-                                    value={viewPw}
-                                    onChange={(e) => setViewPw(e.target.value)}
-                                    placeholder="의뢰 시 입력한 비밀번호"
-                                />
-                            </div>
-                            <Button type="submit" className="w-full" disabled={loading}>
-                                {loading ? "조회 중..." : "조회하기"}
-                            </Button>
-                        </form>
-                    </CardContent>
-                </Card>
+                {!report && (
+                    <Card className="mb-8">
+                        <CardHeader>
+                            <CardTitle>의뢰 조회</CardTitle>
+                            <CardDescription>
+                                의뢰 시 입력하신 이메일과 열람 비밀번호로 BM 보고서를 조회할 수 있습니다.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="email">이메일</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="example@email.com"
+                                        disabled={loading}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="viewPw">열람 비밀번호</Label>
+                                    <Input
+                                        id="viewPw"
+                                        type="password"
+                                        value={viewPw}
+                                        onChange={(e) => setViewPw(e.target.value)}
+                                        placeholder="의뢰 시 입력한 비밀번호"
+                                        disabled={loading}
+                                    />
+                                </div>
+                                <Button type="submit" className="w-full" disabled={loading}>
+                                    {loading ? "조회 중..." : "조회하기"}
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {report && (
                     <Card>
