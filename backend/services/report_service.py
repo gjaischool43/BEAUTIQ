@@ -19,7 +19,6 @@ import markdown
 import html
 
 from scripts.skincare_focus_map import (
-    SKINCARE_ING_DB,      # 현재는 직접 사용하지 않지만, 확장 여지를 위해 가져옴
     infer_focus_tags,
     infer_product_type,
 )
