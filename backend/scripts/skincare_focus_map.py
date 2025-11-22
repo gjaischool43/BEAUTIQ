@@ -11,9 +11,9 @@ def load_category_keyword_tag():
     
 DEFAULT_FOCUS = ["진정", "보습"]
 
-# 1) JSON 로드
-with open("category_keyword_tag.json", "r", encoding="utf-8") as f:
-    CATEGORY_KEYWORD_TAG = json.load(f)
+
+# JSON 로드 (경로 안정적으로)
+CATEGORY_KEYWORD_TAG = load_category_keyword_tag()
 
 
 def infer_focus_tags(category_code: str, top_tokens: List[str]) -> List[str]:
