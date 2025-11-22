@@ -68,3 +68,5 @@ def infer_product_type(request_cat: str, focus_tags: List[str]) -> str:
         prefix = "데일리"
 
     return f"{prefix} {base}"
+
+
