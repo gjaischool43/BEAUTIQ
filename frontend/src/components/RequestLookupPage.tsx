@@ -8,16 +8,15 @@ import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import {
     RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-    ResponsiveContainer, Cell, PieChart, Pie, BarChart, Bar, XAxis, YAxis, Tooltip, Legend
+    ResponsiveContainer, Cell, PieChart, Pie, BarChart, Bar, XAxis, YAxis,
+    Tooltip, Legend, LineChart, Line, CartesianGrid
 } from "recharts";
-import { TrendingUp, Users, Eye, Star, Award, AlertCircle } from "lucide-react";
+import { TrendingUp, Users, Eye, Star, Award, AlertCircle, PieChart as PieIcon, BarChart3 } from "lucide-react";
+
 interface RequestLookupPageProps {
     onBack: () => void;
 }
 
-// 백엔드에서 내려줄 리포트 타입
-// - html: 백엔드에서 sections만 HTML로 변환한 문자열
-// - contents: 혹시 아직 JSON 그대로 오는 경우를 대비해서 optional로 남겨둠 (백엔드 정리되면 제거해도 됨)
 interface LookupReport {
     report_id: number;
     request_id: number;
@@ -26,7 +25,6 @@ interface LookupReport {
     contents?: any;
 }
 
-// 크리에이터 분석 보고서 타입
 interface CreatorReport {
     report_creator_id: number;
     title: string | null;
@@ -52,6 +50,25 @@ interface CreatorReport {
     created_at: string;
 }
 
+interface MetricItem {
+    label: string;
+    value: string | number;
+    unit?: string;
+    percentage?: number;
+}
+
+interface BMSection {
+    title: string;
+    metrics?: MetricItem[];
+    content?: string;
+    type?: 'metrics' | 'text' | 'table';
+}
+
+interface BMReportData {
+    title?: string;
+    sections: BMSection[];
+}
+
 export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
     const [email, setEmail] = useState("");
     const [viewPw, setViewPw] = useState("");
@@ -59,6 +76,7 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
     const [report, setReport] = useState<LookupReport | null>(null);
     const [creatorReport, setCreatorReport] = useState<CreatorReport | null>(null);
     const [creatorLoading, setCreatorLoading] = useState(false);
+    const [bmData, setBmData] = useState<BMReportData | null>(null);
 
     const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -99,6 +117,12 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
             const fetchedReport = data.report ?? null;
             setReport(fetchedReport);
 
+            // BM 리포트 파싱
+            if (fetchedReport?.html) {
+                const parsed = parseBMReport(fetchedReport.html);
+                setBmData(parsed);
+            }
+
             // 크리에이터 분석 보고서도 함께 조회
             if (fetchedReport?.request_id) {
                 setCreatorLoading(true);
@@ -135,7 +159,7 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
 
     return (
         <div className="min-h-screen pt-24 pb-12">
-            <div className="w-full max-w-3xl mx-auto px-6">
+            <div className="w-full max-w-4xl mx-auto px-6">
                 <Button variant="ghost" onClick={onBack} className="mb-6">
                     메인으로
                 </Button>
@@ -195,7 +219,9 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
 
                                 {/* BM 탭 */}
                                 <TabsContent value="bm">
-                                    {report.html ? (
+                                    {bmData ? (
+                                        <BMReportView data={bmData} htmlContent={report.html ?? undefined} />
+                                    ) : report.html ? (
                                         <div
                                             className="bm-report prose max-w-none text-base leading-relaxed"
                                             style={{
@@ -203,7 +229,7 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                                                 '--tw-prose-headings': '#111827',
                                                 '--tw-prose-links': '#2563eb',
                                             } as React.CSSProperties}
-                                            dangerouslySetInnerHTML={{ __html: report.html || "" }}
+                                            dangerouslySetInnerHTML={{ __html: report.html }}
                                         />
                                     ) : (
                                         <pre className="text-xs bg-muted/60 p-4 rounded-md overflow-x-auto whitespace-pre-wrap break-words">
@@ -225,6 +251,362 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                     </Card>
                 )}
             </div>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────
+// BM 리포트 파싱 함수
+// ─────────────────────────────────────────────
+function parseBMReport(html: string): BMReportData {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const data: BMReportData = {
+        sections: []
+    };
+
+    // 모든 섹션 추출
+    const sections = doc.querySelectorAll('section, [class*="section"], article, main > div');
+
+    sections.forEach((section) => {
+        const title = section.querySelector('h1, h2, h3')?.textContent || '';
+
+        // 테이블 추출
+        const tables = section.querySelectorAll('table');
+        tables.forEach((table) => {
+            const metrics = parseTable(table);
+            if (metrics.length > 0) {
+                data.sections.push({
+                    title: title || '분석 지표',
+                    metrics,
+                    type: 'metrics'
+                });
+            }
+        });
+
+        // 리스트 항목 추출 (ul, ol)
+        const lists = section.querySelectorAll('ul > li, ol > li');
+        if (lists.length > 0) {
+            const items = Array.from(lists).slice(0, 10).map(li => {
+                const text = li.textContent || '';
+                const colonIndex = text.indexOf(':');
+                return {
+                    label: colonIndex > 0 ? text.substring(0, colonIndex).trim() : text.substring(0, 30),
+                    value: colonIndex > 0 ? text.substring(colonIndex + 1).trim() : text
+                };
+            });
+            if (items.length > 0) {
+                data.sections.push({
+                    title: title || '주요 항목',
+                    metrics: items,
+                    type: 'metrics'
+                });
+            }
+        }
+
+        // 일반 텍스트 섹션
+        if (tables.length === 0 && lists.length === 0) {
+            const textContent = section.textContent?.trim() || '';
+            if (textContent.length > 50 && title) {
+                data.sections.push({
+                    title,
+                    content: textContent,
+                    type: 'text'
+                });
+            }
+        }
+    });
+
+    return data;
+}
+
+function parseTable(table: Element): MetricItem[] {
+    const rows = table.querySelectorAll('tbody tr, tr');
+    const metrics: MetricItem[] = [];
+
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td, th');
+        if (cells.length >= 2) {
+            const label = cells[0]?.textContent?.trim() || '';
+            const valueText = cells[1]?.textContent?.trim() || '';
+
+            // 숫자 추출
+            const numberMatch = valueText.match(/(\d+(?:[.,]\d+)?)/);
+            const number = numberMatch ? numberMatch[1].replace(',', '') : valueText;
+
+            // 백분율 추출
+            const percentMatch = valueText.match(/(\d+)%/);
+
+            metrics.push({
+                label,
+                value: number,
+                percentage: percentMatch ? parseInt(percentMatch[1]) : undefined
+            });
+        }
+    });
+
+    return metrics;
+}
+
+// ─────────────────────────────────────────────
+// BM 리포트 뷰 컴포넌트
+// ─────────────────────────────────────────────
+function BMReportView({ data, htmlContent }: { data: BMReportData; htmlContent?: string }) {
+    const metricsData = data.sections.filter(s => s.metrics && s.metrics.length > 0);
+    const textSections = data.sections.filter(s => s.type === 'text');
+
+    // 숫자 값으로 변환 가능한 메트릭스만 필터링
+    const numericMetrics = metricsData.flatMap(section =>
+        (section.metrics || []).filter(m => !isNaN(Number(m.value)))
+    );
+
+    // 차트용 데이터 생성
+    const chartData = metricsData.slice(0, 2).map(section => {
+        const metrics = (section.metrics || []).slice(0, 8);
+        return {
+            name: section.title,
+            data: metrics.map(m => ({
+                name: m.label.substring(0, 10),
+                value: Number(m.value) || 0,
+                fullLabel: m.label
+            }))
+        };
+    });
+
+    return (
+        <div className="space-y-8">
+            {/* 주요 지표 요약 카드 */}
+            {numericMetrics.length > 0 && (
+                <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {numericMetrics.slice(0, 10).map((metric, idx) => (
+                        <MetricCard key={idx} metric={metric} index={idx} />
+                    ))}
+                </section>
+            )}
+
+            {/* 막대 차트 대시보드 */}
+            {chartData.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {chartData.map((chart, idx) => (
+                        <Card key={idx} className="shadow-lg border border-gray-200">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="flex items-center gap-2 text-lg">
+                                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                                    {chart.name}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={chart.data} margin={{ top: 20, right: 30, left: 0, bottom: 60 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                        <XAxis
+                                            dataKey="name"
+                                            tick={{ fill: '#6b7280', fontSize: 11 }}
+                                            angle={-45}
+                                            textAnchor="end"
+                                            height={80}
+                                        />
+                                        <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} />
+                                        <Tooltip
+                                            cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
+                                            contentStyle={{
+                                                backgroundColor: '#1f2937',
+                                                border: 'none',
+                                                borderRadius: '8px',
+                                                color: '#fff',
+                                                padding: '8px 12px'
+                                            }}
+                                            formatter={(value) => [`${value}`, '값']}
+                                        />
+                                        <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#3b82f6" animationDuration={800} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
+
+            {/* 분포도 파이 차트 */}
+            {metricsData.length > 0 && metricsData[0].metrics && metricsData[0].metrics.length > 0 && (
+                <Card className="shadow-lg border border-gray-200">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <PieIcon className="w-5 h-5 text-purple-600" />
+                            {metricsData[0].title} - 분포도
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ResponsiveContainer width="100%" height={350}>
+                            <PieChart>
+                                <Pie
+                                    data={(metricsData[0].metrics || []).slice(0, 8).map((m, i) => ({
+                                        name: m.label.substring(0, 12),
+                                        value: Number(m.value) || 0
+                                    }))}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={true}
+                                    label={({ name, value }) => `${name}: ${value}`}
+                                    outerRadius={90}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                    animationDuration={800}
+                                >
+                                    {['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#f97316'].map((color, index) => (
+                                        <Cell key={`cell-${index}`} fill={color} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: '#1f2937',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        color: '#fff'
+                                    }}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* 상세 메트릭 그리드 */}
+            {metricsData.length > 0 && (
+                <Card className="shadow-lg border border-gray-200">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <Eye className="w-5 h-5 text-blue-600" />
+                            상세 분석 지표
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-6">
+                            {metricsData.map((section, sIdx) => (
+                                <div key={sIdx} className="border-l-4 border-gradient-to-b from-blue-500 to-purple-500 pl-4">
+                                    <h4 className="font-bold text-gray-900 mb-4 text-base">{section.title}</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {(section.metrics || []).map((metric, mIdx) => {
+                                            const isNumeric = !isNaN(Number(metric.value));
+                                            return (
+                                                <div
+                                                    key={mIdx}
+                                                    className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4 rounded-lg border border-blue-100 hover:shadow-md transition-all duration-200"
+                                                >
+                                                    <div className="text-xs text-gray-600 font-semibold mb-2 truncate">{metric.label}</div>
+                                                    <div className="flex items-baseline gap-2 mb-3">
+                                                        <div className="text-2xl font-bold text-gray-900">{metric.value}</div>
+                                                        {metric.unit && <div className="text-sm text-gray-500">{metric.unit}</div>}
+                                                    </div>
+                                                    {metric.percentage !== undefined && isNumeric && (
+                                                        <div className="w-full">
+                                                            <div className="text-xs text-gray-600 mb-1 font-medium">{metric.percentage}%</div>
+                                                            <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full rounded-full transition-all duration-700 bg-gradient-to-r from-blue-500 to-purple-500"
+                                                                    style={{ width: `${Math.min(metric.percentage, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* 텍스트 섹션 */}
+            {textSections.length > 0 && (
+                <div className="space-y-4">
+                    {textSections.map((section, idx) => (
+                        <Card key={idx} className="shadow-lg border border-gray-200">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-lg">{section.title}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-base leading-relaxed whitespace-pre-wrap break-words text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                    {section.content}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
+
+            {/* 원본 HTML 콘텐츠 (참고용) */}
+            {htmlContent && (
+                <Card className="shadow-lg border border-gray-200">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">상세 보고서 (원본)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="max-h-96 overflow-y-auto">
+                        <div
+                            className="bm-report prose prose-sm max-w-none text-sm leading-relaxed"
+                            style={{
+                                '--tw-prose-body': '#374151',
+                                '--tw-prose-headings': '#111827',
+                                '--tw-prose-links': '#2563eb',
+                            } as React.CSSProperties}
+                            dangerouslySetInnerHTML={{ __html: htmlContent }}
+                        />
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────
+// 메트릭 카드 컴포넌트
+// ─────────────────────────────────────────────
+function MetricCard({ metric, index }: { metric: MetricItem; index: number }) {
+    const colors = [
+        'from-blue-50 to-blue-100 border-blue-200 text-blue-700',
+        'from-purple-50 to-purple-100 border-purple-200 text-purple-700',
+        'from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700',
+        'from-orange-50 to-orange-100 border-orange-200 text-orange-700',
+        'from-pink-50 to-pink-100 border-pink-200 text-pink-700',
+        'from-cyan-50 to-cyan-100 border-cyan-200 text-cyan-700',
+        'from-amber-50 to-amber-100 border-amber-200 text-amber-700',
+        'from-indigo-50 to-indigo-100 border-indigo-200 text-indigo-700',
+        'from-red-50 to-red-100 border-red-200 text-red-700',
+        'from-teal-50 to-teal-100 border-teal-200 text-teal-700',
+    ];
+
+    const colorClass = colors[index % colors.length];
+    const gradients = [
+        'from-blue-500 to-cyan-500',
+        'from-purple-500 to-pink-500',
+        'from-emerald-500 to-teal-500',
+        'from-orange-500 to-red-500',
+        'from-pink-500 to-rose-500',
+        'from-cyan-500 to-blue-500',
+        'from-amber-500 to-orange-500',
+        'from-indigo-500 to-purple-500',
+        'from-red-500 to-pink-500',
+        'from-teal-500 to-emerald-500',
+    ];
+
+    return (
+        <div className={`bg-gradient-to-br ${colorClass} p-4 rounded-xl border transform transition-all duration-300 hover:scale-105 hover:shadow-lg`}>
+            <div className="text-xs font-semibold text-gray-700 mb-2 line-clamp-2">{metric.label}</div>
+            <div className="text-3xl font-bold mb-2 text-gray-900">
+                {metric.value}
+            </div>
+            {metric.percentage !== undefined && (
+                <div className="w-full h-2 bg-white/50 rounded-full overflow-hidden">
+                    <div
+                        className={`h-full rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${gradients[index % gradients.length]}`}
+                        style={{ width: `${Math.min(Number(metric.percentage), 100)}%` }}
+                    />
+                </div>
+            )}
         </div>
     );
 }
@@ -276,7 +658,6 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
         return "bg-gray-100 text-gray-700";
     };
 
-    // 레이더 차트 데이터
     const radarData = [
         { subject: '참여도', score: report.engagement_score ?? 0, fullMark: 100 },
         { subject: '조회수', score: report.views_score ?? 0, fullMark: 100 },
@@ -285,14 +666,12 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
         { subject: '일관성', score: report.consistency_score ?? 0, fullMark: 100 },
     ];
 
-    // BLC 점수 게이지용 데이터
     const blcScore = report.blc_score ?? 0;
     const gaugeData = [
         { name: 'Score', value: blcScore, fill: blcScore >= 80 ? '#10b981' : blcScore >= 60 ? '#3b82f6' : '#f59e0b' },
         { name: 'Remaining', value: 100 - blcScore, fill: '#e5e7eb' }
     ];
 
-    // 점수 막대 그래프 데이터
     const barData = [
         { name: '참여도', score: report.engagement_score ?? 0, color: '#a855f7' },
         { name: '조회수', score: report.views_score ?? 0, color: '#3b82f6' },
@@ -556,5 +935,3 @@ function ReportSection({ title, content, color, icon }: { title: string; content
         </section>
     );
 }
-
-
