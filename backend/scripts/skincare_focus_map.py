@@ -1,12 +1,19 @@
 import json
 import re
 from typing import List
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent
+JSON_PATH = BASE_DIR / "category_keyword_tag.json"
 
+def load_category_keyword_tag():
+    with JSON_PATH.open("r", encoding="utf-8") as f:
+        return json.load(f)
+    
 DEFAULT_FOCUS = ["진정", "보습"]
 
-# 1) JSON 로드
-with open("category_keyword_tag.json", "r", encoding="utf-8") as f:
-    CATEGORY_KEYWORD_TAG = json.load(f)
+
+# JSON 로드 (경로 안정적으로)
+CATEGORY_KEYWORD_TAG = load_category_keyword_tag()
 
 
 def infer_focus_tags(category_code: str, top_tokens: List[str]) -> List[str]:
