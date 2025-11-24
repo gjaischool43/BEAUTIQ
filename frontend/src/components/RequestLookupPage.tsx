@@ -14,6 +14,8 @@ import {
 } from "recharts";
 import { TrendingUp, Users, Eye, Star, Award, AlertCircle } from "lucide-react";
 
+import { } from "./styles/tabs.css";
+
 interface RequestLookupPageProps {
     onBack: () => void;
 }
@@ -194,35 +196,18 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                         </CardHeader> */}
                         <CardContent className="overflow-hidden">
                             <Tabs defaultValue="bm" className="w-full">
-                                <TabsList className="mb-4 grid grid-cols-2 w-full">
-                                    <TabsTrigger
-                                        value="bm"
-                                        className="
-                                                    border
-                                                    data-[state=active]:!bg-blue-600
-                                                    data-[state=active]:!text-white
-                                                    data-[state=active]:shadow
-                                                    data-[state=active]:!border-blue-600
-                                                "
-                                    >
+                                <TabsList className="custom-tabs-list">
+                                    <TabsTrigger value="bm" className="custom-tab-trigger">
                                         브랜드 BM 보고서
                                     </TabsTrigger>
 
-                                    <TabsTrigger
-                                        value="creator"
-                                        className="
-                                                    border
-                                                    data-[state=active]:!bg-blue-600
-                                                    data-[state=active]:!text-white
-                                                    data-[state=active]:shadow
-                                                    data-[state=active]:!border-blue-600
-                                                "
-                                    >
+                                    <TabsTrigger value="creator" className="custom-tab-trigger">
                                         크리에이터 분석 보고서
                                     </TabsTrigger>
                                 </TabsList>
 
-                                <TabsContent value="bm">
+                                {/* BM 보고서 탭 */}
+                                <TabsContent value="bm" className="custom-tabs-content">
                                     {report.html ? (
                                         <Card className="shadow-lg border border-gray-200">
                                             <CardHeader className="pb-3">
@@ -244,6 +229,24 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                                         <pre className="text-xs bg-muted/60 p-4 rounded-md overflow-x-auto whitespace-pre-wrap break-words">
                                             {JSON.stringify(report.contents, null, 2)}
                                         </pre>
+                                    )}
+                                </TabsContent>
+
+                                {/* 크리에이터 분석 보고서 탭 */}
+                                <TabsContent value="creator" className="custom-tabs-content max-h-[70vh] overflow-y-auto">
+                                    {creatorLoading ? (
+                                        <div className="flex items-center justify-center py-12">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                                        </div>
+                                    ) : creatorReport ? (
+                                        <CreatorReportView report={creatorReport} />
+                                    ) : (
+                                        <div className="text-center py-12">
+                                            <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                            <p className="text-gray-500 text-lg">
+                                                크리에이터 분석 보고서가 아직 생성되지 않았습니다.
+                                            </p>
+                                        </div>
                                     )}
                                 </TabsContent>
                             </Tabs>
