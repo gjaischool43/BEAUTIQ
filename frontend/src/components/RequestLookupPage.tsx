@@ -8,24 +8,13 @@ import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import {
-    RadarChart,
-    Radar,
-    PolarGrid,
-    PolarAngleAxis,
-    PolarRadiusAxis,
-    ResponsiveContainer,
-    Cell,
-    PieChart,
-    Pie,
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    Tooltip,
+    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+    ResponsiveContainer, Cell, PieChart, Pie, BarChart, Bar, XAxis, YAxis,
+    Tooltip
 } from "recharts";
 import { TrendingUp, Users, Eye, Star, Award, AlertCircle } from "lucide-react";
 
-import "../styles/tabs.css";
+import "./styles/tabs.css";
 
 interface RequestLookupPageProps {
     onBack: () => void;
@@ -78,15 +67,12 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
     const [report, setReport] = useState<LookupReport | null>(null);
     const [creatorReport, setCreatorReport] = useState<CreatorReport | null>(null);
     const [creatorLoading, setCreatorLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<"bm" | "creator">("bm");
 
     const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setReport(null);
-        setCreatorReport(null);
-        setActiveTab("bm");
 
         if (!email || !viewPw) {
             toast.error("이메일과 열람 비밀번호를 입력해주세요.");
@@ -207,25 +193,13 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                 {report && (
                     <Card>
                         <CardContent className="overflow-hidden">
-                            <Tabs
-                                value={activeTab}
-                                onValueChange={(v) => setActiveTab(v as "bm" | "creator")}
-                                className="w-full"
-                            >
+                            <Tabs defaultValue="bm" className="w-full">
                                 <TabsList className="custom-tabs-list">
-                                    <TabsTrigger
-                                        value="bm"
-                                        className={`custom-tab-trigger ${activeTab === "bm" ? "active" : ""
-                                            }`}
-                                    >
+                                    <TabsTrigger value="bm" className="custom-tab-trigger">
                                         브랜드 BM 보고서
                                     </TabsTrigger>
 
-                                    <TabsTrigger
-                                        value="creator"
-                                        className={`custom-tab-trigger ${activeTab === "creator" ? "active" : ""
-                                            }`}
-                                    >
+                                    <TabsTrigger value="creator" className="custom-tab-trigger">
                                         크리에이터 분석 보고서
                                     </TabsTrigger>
                                 </TabsList>
@@ -332,7 +306,8 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
     const getGradeColor = (grade: string | null): string => {
         if (!grade) return "bg-gray-100 text-gray-700";
         const gradeUpper = grade.toUpperCase();
-        if (gradeUpper === "A" || gradeUpper.includes("GO")) return "bg-emerald-100 text-emerald-700";
+        if (gradeUpper === "A" || gradeUpper.includes("GO"))
+            return "bg-emerald-100 text-emerald-700";
         if (gradeUpper === "B") return "bg-blue-100 text-blue-700";
         if (gradeUpper === "C") return "bg-yellow-100 text-yellow-700";
         return "bg-gray-100 text-gray-700";
@@ -366,64 +341,72 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
 
     return (
         <div className="space-y-8">
-            {/* 헤더 요약 */}
+            {/* 헤더 요약 : 제목 아래에 BLC 점수 배치 */}
             <section className="border-2 border-gray-200 rounded-2xl p-8 bg-gradient-to-br from-white via-blue-50 to-purple-50 shadow-xl">
-                <div className="flex flex-wrap items-start justify-between gap-6">
-                    <div className="flex-1 min-w-[300px]">
-                        <div className="flex items-center gap-3 mb-3">
-                            <Award className="w-8 h-8 text-blue-600" />
-                            <h2 className="text-3xl font-bold text-gray-900">{report.title}</h2>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3 mb-4">
-                            <div
-                                className={`px-5 py-2.5 rounded-full font-bold text-lg shadow-md ${getGradeColor(
-                                    report.blc_grade
-                                )}`}
-                            >
-                                BLC 등급: {report.blc_grade ?? "-"}
-                                {report.blc_grade_label ? ` (${report.blc_grade_label})` : ""}
-                            </div>
-                            <div className="px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow-md">
-                                Tier: {report.blc_tier ?? "-"}
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-700 bg-white/70 backdrop-blur px-4 py-3 rounded-xl">
-                            <Users className="w-5 h-5 text-blue-600" />
-                            <span className="font-semibold">구독자:</span>
-                            <span className="text-xl font-bold text-gray-900">
-                                {report.subscriber_count != null
-                                    ? report.subscriber_count.toLocaleString()
-                                    : "-"}
-                                명
-                            </span>
-                        </div>
+                <div className="flex flex-col gap-6">
+                    {/* 제목 */}
+                    <div className="flex items-center gap-3">
+                        <Award className="w-8 h-8 text-blue-600" />
+                        <h2 className="text-3xl font-bold text-gray-900">{report.title}</h2>
                     </div>
 
-                    {/* BLC 점수 게이지 차트 */}
-                    <div className="text-center min-w-[180px]">
-                        <div className="relative w-40 h-40">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={gaugeData}
-                                        cx="50%"
-                                        cy="50%"
-                                        startAngle={180}
-                                        endAngle={0}
-                                        innerRadius={50}
-                                        outerRadius={70}
-                                        dataKey="value"
-                                        stroke="none"
-                                    >
-                                        {gaugeData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                                        ))}
-                                    </Pie>
-                                </PieChart>
-                            </ResponsiveContainer>
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <div className="text-5xl font-bold text-gray-900">{report.blc_score ?? "-"}</div>
-                                <div className="text-xs text-gray-600 font-medium">BLC 점수</div>
+                    {/* BLC 점수 + 요약 정보 */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
+                        {/* BLC 게이지 - 제목 바로 아래 */}
+                        <div className="flex justify-start md:justify-center">
+                            <div className="relative w-40 h-40 md:w-44 md:h-44">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={gaugeData}
+                                            cx="50%"
+                                            cy="50%"
+                                            startAngle={180}
+                                            endAngle={0}
+                                            innerRadius={55}
+                                            outerRadius={75}
+                                            dataKey="value"
+                                            stroke="none"
+                                        >
+                                            {gaugeData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                                            ))}
+                                        </Pie>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <div className="text-4xl md:text-5xl font-bold text-gray-900">
+                                        {report.blc_score ?? "-"}
+                                    </div>
+                                    <div className="text-xs text-gray-600 font-medium mt-1">BLC 점수</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 등급 / 티어 / 구독자 정보 */}
+                        <div className="flex-1 space-y-4">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div
+                                    className={`px-5 py-2.5 rounded-full font-bold text-lg shadow-md ${getGradeColor(
+                                        report.blc_grade
+                                    )}`}
+                                >
+                                    BLC 등급: {report.blc_grade ?? "-"}
+                                    {report.blc_grade_label ? ` (${report.blc_grade_label})` : ""}
+                                </div>
+                                <div className="px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow-md">
+                                    Tier: {report.blc_tier ?? "-"}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-700 bg-white/70 backdrop-blur px-4 py-3 rounded-xl">
+                                <Users className="w-5 h-5 text-blue-600" />
+                                <span className="font-semibold">구독자:</span>
+                                <span className="text-xl font-bold text-gray-900">
+                                    {report.subscriber_count != null
+                                        ? report.subscriber_count.toLocaleString()
+                                        : "-"}
+                                    명
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -477,7 +460,11 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
                     <CardContent>
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={barData} layout="vertical">
-                                <XAxis type="number" domain={[0, 100]} tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                <XAxis
+                                    type="number"
+                                    domain={[0, 100]}
+                                    tick={{ fill: "#6b7280", fontSize: 11 }}
+                                />
                                 <YAxis
                                     type="category"
                                     dataKey="name"
@@ -590,7 +577,10 @@ function ScoreCard({
     color: string;
     icon: React.ReactNode;
 }) {
-    const colorMap: Record<string, { bg: string; text: string; bar: string; border: string }> = {
+    const colorMap: Record<
+        string,
+        { bg: string; text: string; bar: string; border: string }
+    > = {
         purple: {
             bg: "from-purple-50 to-purple-100",
             text: "text-purple-700",
@@ -660,7 +650,9 @@ function ReportSection({
     return (
         <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center gap-3 mb-4">
-                <div className={`w-1 h-10 bg-gradient-to-b ${colorMap[color]} rounded-full`} />
+                <div
+                    className={`w-1 h-10 bg-gradient-to-b ${colorMap[color]} rounded-full`}
+                ></div>
                 {icon && <div className="text-gray-700">{icon}</div>}
                 <h3 className="text-xl font-bold text-gray-900">{title}</h3>
             </div>
