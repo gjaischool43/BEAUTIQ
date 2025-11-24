@@ -188,15 +188,25 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
 
                 {report && (
                     <Card>
-                        <CardHeader>
+                        {/* <CardHeader>
                             <CardTitle>{report.title || "BM 보고서"}</CardTitle>
-                            <CardDescription>beautiq에서 생성한 원본 BM 리포트입니다.</CardDescription>
-                        </CardHeader>
+                            <CardDescription>beautiq 리포트</CardDescription>
+                        </CardHeader> */}
                         <CardContent className="overflow-hidden">
                             <Tabs defaultValue="bm" className="w-full">
                                 <TabsList className="mb-4">
-                                    <TabsTrigger value="bm">브랜드 BM 보고서</TabsTrigger>
-                                    <TabsTrigger value="creator">크리에이터 분석 보고서</TabsTrigger>
+                                    <TabsTrigger
+                                        value="bm"
+                                        className="
+                                                    data-[state=active]:bg-blue-600
+                                                    data-[state=active]:text-white
+                                                    data-[state=active]:shadow
+                                                    data-[state=active]:border-blue-600
+                                                    border
+                                                  "
+                                    >
+                                        브랜드 BM 보고서
+                                    </TabsTrigger>
                                 </TabsList>
 
                                 {/* BM 탭 – 오직 원본 beautiq 보고서 HTML만 표시 */}
