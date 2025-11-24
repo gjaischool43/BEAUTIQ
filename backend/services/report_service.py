@@ -199,8 +199,12 @@ def build_bm_report_from_df(
 
     # priority = review_cnt × share_pos (있으면 계산)
     if {"review_cnt", "share_pos"}.issubset(df.columns):
-        df["review_cnt"] = pd.to_numeric(df["review_cnt"], errors="coerce").fillna(0).clip(0)
-        df["share_pos"] = pd.to_numeric(df["share_pos"], errors="coerce").fillna(0.0)
+        df["review_cnt"] = (
+            pd.to_numeric(df["review_cnt"], errors="coerce").fillna(0).clip(0)
+        )
+        df["share_pos"] = pd.to_numeric(
+            df["share_pos"], errors="coerce"
+        ).fillna(0.0)
         df["priority"] = df["review_cnt"].clip(lower=1) * df["share_pos"]
     else:
         df["priority"] = 0.0
@@ -217,7 +221,13 @@ def build_bm_report_from_df(
             "max": float(df["priority"].max()),
             "mean": float(df["priority"].mean()),
         }
-        priority_cols = ["product_id", "product_name", "review_cnt", "share_pos", "priority"]
+        priority_cols = [
+            "product_id",
+            "product_name",
+            "review_cnt",
+            "share_pos",
+            "priority",
+        ]
         priority_df = (
             df.sort_values("priority", ascending=False)
             .head(10)[priority_cols]
@@ -237,7 +247,9 @@ def build_bm_report_from_df(
         priority_md = md_table_from_rows(priority_rows)
     else:
         priority_stats = {"rows": 0}
-        priority_md = "우선순위 정보를 계산할 수 있는 리뷰 수/긍정 비율 데이터가 충분하지 않습니다."
+        priority_md = (
+            "우선순위 정보를 계산할 수 있는 리뷰 수/긍정 비율 데이터가 충분하지 않습니다."
+        )
 
     digest_brief_obj = {
         "score_stats": digest.get("score_stats", {}),
@@ -287,10 +299,11 @@ def build_bm_report_from_df(
     }
     blc_json_str = json.dumps(BLC_INFO, ensure_ascii=False, indent=2)
 
-   # -------------------------------------------------------------------
-    # 재정렬된 프롬프트 템플릿 (0~7번)
+    # -------------------------------------------------------------------
+    # 5) 섹션별 프롬프트 (재정렬된 버전)
     # -------------------------------------------------------------------
 
+    # 0) 제품 전략
     p0 = f"""
 제목: "# 0) 제품 전략 및 콘셉트 스코어링 (Product Strategy & Concept Scoring)"
 
@@ -320,6 +333,7 @@ def build_bm_report_from_df(
   BLC와 리뷰 데이터가 왜 그 선택을 뒷받침하는지 설명하는 방식으로 작성하라.
 """
 
+    # 1) 가격 전략
     p1 = f"""
 제목: "# 1) 가격 전략 (Price Strategy)"
 
@@ -343,6 +357,7 @@ def build_bm_report_from_df(
   '1만 후반~2만 초반', '3만 중후반'과 같은 구간 단위 표현만 사용하라.
 """
 
+    # 2) 데이터 개요
     p2 = f"""
 제목: "# 2) 데이터 개요 및 분석 범위 (Data Overview)"
 
@@ -368,6 +383,7 @@ def build_bm_report_from_df(
   우선순위 Top10이 '가장 많이 팔리고 반응이 좋은 베스트셀러 핵심군'이라는 점을 한 문단으로 요약하라.
 """
 
+    # 3) 브랜드 요약
     p3 = f"""
 제목: "# 3) 브랜드 요약 (Brand Summary)"
 
@@ -395,7 +411,8 @@ def build_bm_report_from_df(
   '이 방향으로 브랜딩하면 성공 확률이 더 높다'는 데이터 기반 근거라는 점을 한 문장으로 정리하라.
 - 올리브영 리뷰 기반 BM이라는 점을 한 번 더 언급하라.
 """
-    # 4) 시장 분석 (베스트셀러 집단의 공통 니즈)
+
+    # 4) 시장 분석
     p4 = f"""
 제목: "# 4) 시장 분석 (Market Landscape)"
 
@@ -436,6 +453,7 @@ def build_bm_report_from_df(
   자연스럽게 연결될 수 있도록 서술하라.
 """
 
+    # 5) BLC 기반 브랜드 전략
     p5 = f"""
 제목: "# 5) BLC 기반 브랜드 전략 (Brand Strategy Based on BLC)"
 
@@ -467,6 +485,7 @@ def build_bm_report_from_df(
   크리에이터가 원래 하고 싶어 하던 이미지/톤을 강화하는 보완 장치로 설명하라.
 """
 
+    # 6) 의사결정 로그
     p6 = f"""
 제목: "# 6) 의사결정 로그 (Decision Log)"
 
@@ -510,6 +529,7 @@ def build_bm_report_from_df(
   데이터가 어떻게 그 선택을 보완/강화했는지에 초점을 맞춰 작성하라.
 """
 
+    # 7) 부록
     p7 = f"""
 제목: "# 7) 부록 (Appendix)"
 
@@ -540,7 +560,7 @@ def build_bm_report_from_df(
 """
 
     # -------------------------------------------------------------------
-    # LLM 호출 - 재정렬된 순서 적용
+    # 6. 실제 LLM 호출
     # -------------------------------------------------------------------
     sections_md: Dict[str, str] = {}
     for label, key, pr in [
@@ -556,7 +576,6 @@ def build_bm_report_from_df(
         print(f"[MAKE] {label}")
         sections_md[key] = llm_section(pr)
 
-    # 6-1) 요약/타이틀 생성
     brand_summary_md = sections_md.get("brand_summary", "")
     generated_ts_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -565,8 +584,7 @@ def build_bm_report_from_df(
         fallback=f"{influencer_name} BM 리포트 ({category_label})",
     )
 
-    # 6-2) full_markdown (다운로드/미리보기용 전체 마크다운)
-    # 화면에는 product → price → data → brand → market → blc → log → appendix 순으로 보이도록 구성
+    # full markdown (헤더 + 섹션들)
     header = f"""
 # {INFLUENCER} — {REQUEST_CATEGORY} BM 보고서  
 - 의뢰자 요청 카테고리: {REQUEST_CATEGORY}  
@@ -593,9 +611,7 @@ def build_bm_report_from_df(
         ]
     )
 
-    # -------------------------------------------------------------------
-    # 섹션 JSON 맵 생성 (번호 및 라벨 정리)
-    # -------------------------------------------------------------------
+    # 7) 섹션 json
     section_json_map: Dict[str, Dict[str, Any]] = {
         "product_strategy": _make_section_json(
             "product_strategy",
@@ -639,9 +655,7 @@ def build_bm_report_from_df(
         ),
     }
 
-    # -------------------------------------------------------------------
-    # contents 통합
-    # -------------------------------------------------------------------
+    # 8) contents 통합
     contents = {
         "meta": {
             "influencer_name": influencer_name,
@@ -665,9 +679,7 @@ def build_bm_report_from_df(
         },
     }
 
-    # -------------------------------------------------------------------
-    # report_bm 컬럼 dict 반환
-    # -------------------------------------------------------------------
+    # 9) report_bm 컬럼 dict 반환 (request_id, version 등은 바깥에서 세팅)
     col_values: Dict[str, Any] = {
         "influencer_name": influencer_name,
         "brand_concept": brand_concept_for_col,
@@ -693,22 +705,189 @@ def build_bm_report_from_df(
     }
 
     return col_values
+
+
 # -------------------------------------------------------------------
-# 재정렬된 섹션 순서 상수
+# 3. channel_name → channel_url 매핑 헬퍼 (나중 확장용)
+# -------------------------------------------------------------------
+def resolve_channel_url_from_request(
+    db: Session,
+    request_obj: Request,
+) -> Optional[str]:
+    """
+    Request의 channel_name 등을 이용해 channel_url을 찾아오는 헬퍼.
+
+    지금은 템플릿 형태로 두고,
+    - 나중에 creator_channel 테이블,
+    - 혹은 YouTube API/기타 매핑 로직
+    을 붙일 때 이 함수만 수정하면 되도록 분리해 둠.
+    """
+    # 1) Request에 channel_url 컬럼이 나중에 생기면 우선 사용
+    if hasattr(request_obj, "channel_url"):
+        url = getattr(request_obj, "channel_url", None)
+        if url:
+            return url
+
+    channel_name = getattr(request_obj, "channel_name", None)
+    if not channel_name:
+        return None
+
+    # TODO: 실제 매핑 로직 구현
+    return None
+
+
+# -------------------------------------------------------------------
+# 4. DB(request + oliveyoung_review) 기반으로 BM 리포트 생성/저장
+# -------------------------------------------------------------------
+def _fetch_oliveyoung_df_for_request(db: Session, request_obj: Request) -> pd.DataFrame:
+    """
+    request.category_code 에 해당하는 oliveyoung_review 를 가져와서
+    DataFrame 형태로 반환.
+    """
+    category_code = request_obj.category_code
+
+    q = (
+        db.query(
+            OliveyoungReview.product_id,
+            OliveyoungReview.product_name,
+            OliveyoungReview.score,
+            OliveyoungReview.key_ings,
+            OliveyoungReview.summary3,
+            OliveyoungReview.category_code,
+            OliveyoungReview.review_cnt,
+            OliveyoungReview.share_pos,
+        )
+        .filter(OliveyoungReview.category_code == category_code)
+    )
+
+    rows = q.all()
+    if not rows:
+        # 데이터가 없더라도 빈 DF를 리턴하고, LLM 쪽에서 "데이터 부족"을 언급하게 할 수도 있음
+        return pd.DataFrame(
+            columns=[
+                "product_id",
+                "product_name",
+                "score",
+                "key_ings",
+                "summary3",
+                "category_code",
+                "review_cnt",
+                "share_pos",
+            ]
+        )
+
+    df = pd.DataFrame(
+        rows,
+        columns=[
+            "product_id",
+            "product_name",
+            "score",
+            "key_ings",
+            "summary3",
+            "category_code",
+            "review_cnt",
+            "share_pos",
+        ],
+    )
+    return df
+
+
+def build_bm_report_for_request(
+    db: Session,
+    request_id: int,
+    creator_report: Optional[ReportCreator] = None,
+    topn_ings: int = 15,
+) -> ReportBM:
+    """
+    1) request_id 로 request 행 조회
+    2) request.category_code 에 맞는 oliveyoung_review 를 읽어 DataFrame 생성
+    3) DF + request 정보로 report_bm 컬럼 dict 생성
+    4) report_bm 레코드 생성/저장 후 반환
+    """
+    # 1) request 조회
+    req = db.query(Request).filter(Request.request_id == request_id).first()
+    if not req:
+        raise ValueError(f"request_id={request_id} 에 해당하는 의뢰가 없습니다.")
+
+    # 2) creator_report 없으면 DB에서 조회 (가장 최신 버전)
+    if creator_report is None:
+        creator_report = (
+            db.query(ReportCreator)
+            .filter(ReportCreator.request_id == request_id)
+            .order_by(ReportCreator.version.desc())
+            .first()
+        )
+    if creator_report is None:
+        raise ValueError("BM 보고서 생성 전, 크리에이터 분석 보고서가 반드시 필요합니다.")
+
+    # 3) Creator 분석 결과(BLC 매칭) 추출
+    blc_matching = creator_report.blc_matching_json or {}
+    matched_category = (
+        blc_matching.get("matching", {}).get("category")
+        or blc_matching.get("category")
+    )
+    matched_image = (
+        blc_matching.get("matching", {}).get("image")
+        or blc_matching.get("image")
+    )
+    matched_product_type = (
+        blc_matching.get("matching", {}).get("product_type")
+        or blc_matching.get("product_type")
+    )
+
+    # 4) 올리브영 DF 가져오기
+    df = _fetch_oliveyoung_df_for_request(db, req)
+
+    # 5) channel_name → url
+    channel_url = resolve_channel_url_from_request(db, req) or ""
+
+    # 6) BM 생성 dict 만들기
+    col_values = build_bm_report_from_df(
+        df=df,
+        request_obj=req,
+        channel_url=channel_url,
+        topn_ings=topn_ings,
+        blc_category=matched_category,
+        blc_image=matched_image,
+        blc_product_type=matched_product_type,
+    )
+
+    # 7) version 계산
+    existing_count = (
+        db.query(ReportBM)
+        .filter(ReportBM.request_id == request_id)
+        .count()
+    )
+    version = existing_count + 1
+
+    report = ReportBM(
+        request_id=request_id,
+        version=version,
+        report_creator_id=getattr(creator_report, "report_creator_id", None),
+        # latest_run_id는 필요 시 향후 파이프라인에서 세팅
+        **col_values,
+    )
+
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+    return report
+
+
+# -------------------------------------------------------------------
+# 5. BM 섹션 JSON → HTML 렌더링 헬퍼
 # -------------------------------------------------------------------
 SECTION_ORDER = [
-    "product_strategy",   # 0. 제품 전략
-    "price_strategy",     # 1. 가격 전략
-    "data_overview",      # 2. 데이터 개요
-    "brand_summary",      # 3. 브랜드 요약
-    "market_analysis",    # 4. 시장 분석
-    "blc_strategy",       # 5. BLC 기반 브랜드 전략
-    "decision_log",       # 6. 의사결정 로그
-    "appendix",           # 7. 부록
+    "product_strategy",   # 1) 제품 전략
+    "price_strategy",     # 2) 가격 전략
+    "data_overview",      # 3) 데이터 개요
+    "brand_summary",      # 4) 브랜드 요약
+    "market_analysis",    # 5) 시장 분석
+    "blc_strategy",       # 6) BLC 기반 브랜드 전략
+    "decision_log",       # 7) 의사결정 로그
+    "appendix",           # 부록
 ]
 
-print("\n✓ 모든 프롬프트 섹션 생성 완료")
-print(f"✓ 순서: {' → '.join([k.replace('_', ' ').title() for k in SECTION_ORDER])}")
 
 def render_bm_sections_html(sections: dict) -> str:
     """
