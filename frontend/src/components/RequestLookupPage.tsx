@@ -25,7 +25,7 @@ import {
 } from "recharts";
 import { TrendingUp, Users, Eye, Star, Award, AlertCircle } from "lucide-react";
 
-import "./styles/tabs.css";
+import "../styles/tabs.css";
 
 interface RequestLookupPageProps {
     onBack: () => void;
