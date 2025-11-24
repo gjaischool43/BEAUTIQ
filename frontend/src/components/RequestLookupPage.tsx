@@ -368,7 +368,7 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
         <div className="space-y-8">
             {/* 헤더 요약 */}
             <section className="border-2 border-gray-200 rounded-2xl p-8 bg-gradient-to-br from-white via-blue-50 to-purple-50 shadow-xl">
-                <div className="flex items-start justify-between flex-wrap gap-6">
+                <div className="flex flex-wrap items-start justify-between gap-6">
                     <div className="flex-1 min-w-[300px]">
                         <div className="flex items-center gap-3 mb-3">
                             <Award className="w-8 h-8 text-blue-600" />
@@ -400,7 +400,7 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
                     </div>
 
                     {/* BLC 점수 게이지 차트 */}
-                    <div className="text-center">
+                    <div className="text-center min-w-[180px]">
                         <div className="relative w-40 h-40">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
