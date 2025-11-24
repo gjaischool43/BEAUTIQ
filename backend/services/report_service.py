@@ -709,3 +709,39 @@ SECTION_ORDER = [
 
 print("\n✓ 모든 프롬프트 섹션 생성 완료")
 print(f"✓ 순서: {' → '.join([k.replace('_', ' ').title() for k in SECTION_ORDER])}")
+
+def render_bm_sections_html(sections: dict) -> str:
+    """
+    report_bm.contents['sections'] JSON(dict)를 받아서
+    BM 리포트용 HTML 문자열로 변환.
+
+    - 각 섹션을 <section> 블록으로 묶고
+    - title은 <h2>, content_md는 markdown → HTML 로 변환
+    """
+    html_parts: List[str] = []
+
+    for key in SECTION_ORDER:
+        sec = sections.get(key)
+        if not sec:
+            continue
+
+        title = sec.get("title") or ""
+        content_md = sec.get("content_md") or ""
+
+        # Markdown → HTML
+        body_html = markdown.markdown(
+            content_md,
+            extensions=["extra", "sane_lists"],
+        )
+
+        block = f"""
+        <section class="bm-section bm-section--{html.escape(key)}">
+          <h2 class="bm-section__title">{html.escape(title)}</h2>
+          <div class="bm-section__body">
+            {body_html}
+          </div>
+        </section>
+        """
+        html_parts.append(block)
+
+    return "\n".join(html_parts)
