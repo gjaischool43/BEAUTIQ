@@ -587,12 +587,12 @@ def build_bm_report_from_df(
 
     full_markdown = header + "\n\n---PAGE---\n\n".join(
         [
+            sections_md.get("product_strategy", ""), 
+            sections_md.get("price_strategy", ""),
             sections_md.get("data_overview", ""),
             sections_md.get("brand_summary", ""),
             sections_md.get("market_analysis", ""),
             sections_md.get("blc_strategy", ""),
-            sections_md.get("product_strategy", ""),
-            sections_md.get("price_strategy", ""),
             sections_md.get("decision_log", ""),
             sections_md.get("appendix", ""),
         ]
@@ -833,14 +833,14 @@ def build_bm_report_for_request(
 # 5. BM 섹션 JSON → HTML 렌더링 헬퍼
 # -------------------------------------------------------------------
 SECTION_ORDER = [
-    "data_overview",     # 0. 데이터 개요
-    "brand_summary",     # 1. 브랜드 요약
-    "market_analysis",   # 2. 시장 분석
-    "blc_strategy",      # 3. BLC 기반 브랜드 전략
-    "product_strategy",  # 4. 제품 전략
-    "price_strategy",    # 5. 가격 전략
-    "decision_log",      # 6. 의사결정 로그
-    "appendix",          # 부록
+    "product_strategy",   # 4. 제품 전략
+    "price_strategy",     # 5. 가격 전략
+    "data_overview",      # 0. 데이터 개요
+    "brand_summary",      # 1. 브랜드 요약
+    "market_analysis",    # 2. 시장 분석
+    "blc_strategy",       # 3. BLC 기반 브랜드 전략
+    "decision_log",       # 6. 의사결정 로그
+    "appendix",           # 부록
 ]
 
 
