@@ -1,5 +1,5 @@
 // src/components/RequestLookupPage.tsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type React from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "./ui/card";
 import { Input } from "./ui/input";
@@ -8,13 +8,24 @@ import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import {
-    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-    ResponsiveContainer, Cell, PieChart, Pie, BarChart, Bar, XAxis, YAxis,
-    Tooltip
+    RadarChart,
+    Radar,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
+    ResponsiveContainer,
+    Cell,
+    PieChart,
+    Pie,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    Tooltip,
 } from "recharts";
 import { TrendingUp, Users, Eye, Star, Award, AlertCircle } from "lucide-react";
 
-import { } from "./styles/tabs.css";
+import "./styles/tabs.css";
 
 interface RequestLookupPageProps {
     onBack: () => void;
@@ -67,12 +78,15 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
     const [report, setReport] = useState<LookupReport | null>(null);
     const [creatorReport, setCreatorReport] = useState<CreatorReport | null>(null);
     const [creatorLoading, setCreatorLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState<"bm" | "creator">("bm");
 
     const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setReport(null);
+        setCreatorReport(null);
+        setActiveTab("bm");
 
         if (!email || !viewPw) {
             toast.error("이메일과 열람 비밀번호를 입력해주세요.");
@@ -111,9 +125,11 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
             if (fetchedReport?.request_id) {
                 setCreatorLoading(true);
                 try {
-                    const respCreator = await fetch(`${API_BASE}/admin/requests/${fetchedReport.request_id}/creator-report`);
+                    const respCreator = await fetch(
+                        `${API_BASE}/admin/requests/${fetchedReport.request_id}/creator-report`
+                    );
                     if (respCreator.ok) {
-                        const cdata = await respCreator.json() as {
+                        const cdata = (await respCreator.json()) as {
                             exists: boolean;
                             report: CreatorReport | null;
                         };
@@ -190,18 +206,26 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
 
                 {report && (
                     <Card>
-                        {/* <CardHeader>
-                            <CardTitle>{report.title || "BM 보고서"}</CardTitle>
-                            <CardDescription>beautiq 리포트</CardDescription>
-                        </CardHeader> */}
                         <CardContent className="overflow-hidden">
-                            <Tabs defaultValue="bm" className="w-full">
+                            <Tabs
+                                value={activeTab}
+                                onValueChange={(v) => setActiveTab(v as "bm" | "creator")}
+                                className="w-full"
+                            >
                                 <TabsList className="custom-tabs-list">
-                                    <TabsTrigger value="bm" className="custom-tab-trigger">
+                                    <TabsTrigger
+                                        value="bm"
+                                        className={`custom-tab-trigger ${activeTab === "bm" ? "active" : ""
+                                            }`}
+                                    >
                                         브랜드 BM 보고서
                                     </TabsTrigger>
 
-                                    <TabsTrigger value="creator" className="custom-tab-trigger">
+                                    <TabsTrigger
+                                        value="creator"
+                                        className={`custom-tab-trigger ${activeTab === "creator" ? "active" : ""
+                                            }`}
+                                    >
                                         크리에이터 분석 보고서
                                     </TabsTrigger>
                                 </TabsList>
@@ -216,11 +240,13 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                                             <CardContent className="max-h-[70vh] overflow-y-auto">
                                                 <div
                                                     className="bm-report prose prose-sm max-w-none text-sm leading-relaxed"
-                                                    style={{
-                                                        '--tw-prose-body': '#374151',
-                                                        '--tw-prose-headings': '#111827',
-                                                        '--tw-prose-links': '#2563eb',
-                                                    } as React.CSSProperties}
+                                                    style={
+                                                        {
+                                                            "--tw-prose-body": "#374151",
+                                                            "--tw-prose-headings": "#111827",
+                                                            "--tw-prose-links": "#2563eb",
+                                                        } as React.CSSProperties
+                                                    }
                                                     dangerouslySetInnerHTML={{ __html: report.html }}
                                                 />
                                             </CardContent>
@@ -233,7 +259,10 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                                 </TabsContent>
 
                                 {/* 크리에이터 분석 보고서 탭 */}
-                                <TabsContent value="creator" className="custom-tabs-content max-h-[70vh] overflow-y-auto">
+                                <TabsContent
+                                    value="creator"
+                                    className="custom-tabs-content max-h-[70vh] overflow-y-auto"
+                                >
                                     {creatorLoading ? (
                                         <div className="flex items-center justify-center py-12">
                                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -250,8 +279,6 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                                     )}
                                 </TabsContent>
                             </Tabs>
-
-
                         </CardContent>
                     </Card>
                 )}
@@ -266,7 +293,11 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
 
 function CreatorReportView({ report }: { report: CreatorReport | null }) {
     if (!report) {
-        return <div className="text-center py-12 text-gray-500">크리에이터 분석 보고서가 아직 생성되지 않았습니다.</div>;
+        return (
+            <div className="text-center py-12 text-gray-500">
+                크리에이터 분석 보고서가 아직 생성되지 않았습니다.
+            </div>
+        );
     }
 
     const removeMarkdown = (text: string): string => {
@@ -308,25 +339,29 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
     };
 
     const radarData = [
-        { subject: '참여도', score: report.engagement_score ?? 0, fullMark: 100 },
-        { subject: '조회수', score: report.views_score ?? 0, fullMark: 100 },
-        { subject: '수요', score: report.demand_score ?? 0, fullMark: 100 },
-        { subject: '포맷', score: report.format_score ?? 0, fullMark: 100 },
-        { subject: '일관성', score: report.consistency_score ?? 0, fullMark: 100 },
+        { subject: "참여도", score: report.engagement_score ?? 0, fullMark: 100 },
+        { subject: "조회수", score: report.views_score ?? 0, fullMark: 100 },
+        { subject: "수요", score: report.demand_score ?? 0, fullMark: 100 },
+        { subject: "포맷", score: report.format_score ?? 0, fullMark: 100 },
+        { subject: "일관성", score: report.consistency_score ?? 0, fullMark: 100 },
     ];
 
     const blcScore = report.blc_score ?? 0;
     const gaugeData = [
-        { name: 'Score', value: blcScore, fill: blcScore >= 80 ? '#10b981' : blcScore >= 60 ? '#3b82f6' : '#f59e0b' },
-        { name: 'Remaining', value: 100 - blcScore, fill: '#e5e7eb' }
+        {
+            name: "Score",
+            value: blcScore,
+            fill: blcScore >= 80 ? "#10b981" : blcScore >= 60 ? "#3b82f6" : "#f59e0b",
+        },
+        { name: "Remaining", value: 100 - blcScore, fill: "#e5e7eb" },
     ];
 
     const barData = [
-        { name: '참여도', score: report.engagement_score ?? 0, color: '#a855f7' },
-        { name: '조회수', score: report.views_score ?? 0, color: '#3b82f6' },
-        { name: '수요', score: report.demand_score ?? 0, color: '#10b981' },
-        { name: '포맷', score: report.format_score ?? 0, color: '#f97316' },
-        { name: '일관성', score: report.consistency_score ?? 0, color: '#ec4899' },
+        { name: "참여도", score: report.engagement_score ?? 0, color: "#a855f7" },
+        { name: "조회수", score: report.views_score ?? 0, color: "#3b82f6" },
+        { name: "수요", score: report.demand_score ?? 0, color: "#10b981" },
+        { name: "포맷", score: report.format_score ?? 0, color: "#f97316" },
+        { name: "일관성", score: report.consistency_score ?? 0, color: "#ec4899" },
     ];
 
     return (
@@ -337,12 +372,14 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
                     <div className="flex-1 min-w-[300px]">
                         <div className="flex items-center gap-3 mb-3">
                             <Award className="w-8 h-8 text-blue-600" />
-                            <h2 className="text-3xl font-bold text-gray-900">
-                                {report.title}
-                            </h2>
+                            <h2 className="text-3xl font-bold text-gray-900">{report.title}</h2>
                         </div>
                         <div className="flex flex-wrap items-center gap-3 mb-4">
-                            <div className={`px-5 py-2.5 rounded-full font-bold text-lg shadow-md ${getGradeColor(report.blc_grade)}`}>
+                            <div
+                                className={`px-5 py-2.5 rounded-full font-bold text-lg shadow-md ${getGradeColor(
+                                    report.blc_grade
+                                )}`}
+                            >
                                 BLC 등급: {report.blc_grade ?? "-"}
                                 {report.blc_grade_label ? ` (${report.blc_grade_label})` : ""}
                             </div>
@@ -354,7 +391,10 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
                             <Users className="w-5 h-5 text-blue-600" />
                             <span className="font-semibold">구독자:</span>
                             <span className="text-xl font-bold text-gray-900">
-                                {report.subscriber_count != null ? report.subscriber_count.toLocaleString() : "-"}명
+                                {report.subscriber_count != null
+                                    ? report.subscriber_count.toLocaleString()
+                                    : "-"}
+                                명
                             </span>
                         </div>
                     </div>
@@ -382,9 +422,7 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
                                 </PieChart>
                             </ResponsiveContainer>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <div className="text-5xl font-bold text-gray-900">
-                                    {report.blc_score ?? "-"}
-                                </div>
+                                <div className="text-5xl font-bold text-gray-900">{report.blc_score ?? "-"}</div>
                                 <div className="text-xs text-gray-600 font-medium">BLC 점수</div>
                             </div>
                         </div>
@@ -408,9 +446,13 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
                                 <PolarGrid stroke="#e5e7eb" />
                                 <PolarAngleAxis
                                     dataKey="subject"
-                                    tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
+                                    tick={{ fill: "#374151", fontSize: 12, fontWeight: 600 }}
                                 />
-                                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#9ca3af', fontSize: 10 }} />
+                                <PolarRadiusAxis
+                                    angle={90}
+                                    domain={[0, 100]}
+                                    tick={{ fill: "#9ca3af", fontSize: 10 }}
+                                />
                                 <Radar
                                     name="점수"
                                     dataKey="score"
@@ -435,19 +477,19 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
                     <CardContent>
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={barData} layout="vertical">
-                                <XAxis type="number" domain={[0, 100]} tick={{ fill: '#6b7280', fontSize: 11 }} />
+                                <XAxis type="number" domain={[0, 100]} tick={{ fill: "#6b7280", fontSize: 11 }} />
                                 <YAxis
                                     type="category"
                                     dataKey="name"
-                                    tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
+                                    tick={{ fill: "#374151", fontSize: 12, fontWeight: 600 }}
                                     width={60}
                                 />
                                 <Tooltip
                                     contentStyle={{
-                                        backgroundColor: '#1f2937',
-                                        border: 'none',
-                                        borderRadius: '8px',
-                                        color: '#fff'
+                                        backgroundColor: "#1f2937",
+                                        border: "none",
+                                        borderRadius: "8px",
+                                        color: "#fff",
                                     }}
                                 />
                                 <Bar dataKey="score" radius={[0, 8, 8, 0]}>
@@ -462,48 +504,50 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
             </div>
 
             {/* 핵심 지표 카드 */}
-            {(report.engagement_score !== null || report.views_score !== null || report.demand_score !== null) && (
-                <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-lg">
-                    <h3 className="text-xl font-bold mb-6 text-gray-900 flex items-center gap-2">
-                        <Eye className="w-6 h-6 text-blue-600" />
-                        핵심 지표
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {report.engagement_score !== null && (
-                            <ScoreCard
-                                title="참여도 점수"
-                                score={getScorePercent(report.engagement_score)}
-                                color="purple"
-                                icon={<Star className="w-5 h-5" />}
-                            />
-                        )}
-                        {report.views_score !== null && (
-                            <ScoreCard
-                                title="조회수 점수"
-                                score={getScorePercent(report.views_score)}
-                                color="blue"
-                                icon={<Eye className="w-5 h-5" />}
-                            />
-                        )}
-                        {report.demand_score !== null && (
-                            <ScoreCard
-                                title="수요 점수"
-                                score={getScorePercent(report.demand_score)}
-                                color="emerald"
-                                icon={<TrendingUp className="w-5 h-5" />}
-                            />
-                        )}
-                        {report.format_score !== null && (
-                            <ScoreCard
-                                title="포맷 점수"
-                                score={getScorePercent(report.format_score)}
-                                color="orange"
-                                icon={<Award className="w-5 h-5" />}
-                            />
-                        )}
-                    </div>
-                </section>
-            )}
+            {(report.engagement_score !== null ||
+                report.views_score !== null ||
+                report.demand_score !== null) && (
+                    <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-lg">
+                        <h3 className="text-xl font-bold mb-6 text-gray-900 flex items-center gap-2">
+                            <Eye className="w-6 h-6 text-blue-600" />
+                            핵심 지표
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {report.engagement_score !== null && (
+                                <ScoreCard
+                                    title="참여도 점수"
+                                    score={getScorePercent(report.engagement_score)}
+                                    color="purple"
+                                    icon={<Star className="w-5 h-5" />}
+                                />
+                            )}
+                            {report.views_score !== null && (
+                                <ScoreCard
+                                    title="조회수 점수"
+                                    score={getScorePercent(report.views_score)}
+                                    color="blue"
+                                    icon={<Eye className="w-5 h-5" />}
+                                />
+                            )}
+                            {report.demand_score !== null && (
+                                <ScoreCard
+                                    title="수요 점수"
+                                    score={getScorePercent(report.demand_score)}
+                                    color="emerald"
+                                    icon={<TrendingUp className="w-5 h-5" />}
+                                />
+                            )}
+                            {report.format_score !== null && (
+                                <ScoreCard
+                                    title="포맷 점수"
+                                    score={getScorePercent(report.format_score)}
+                                    color="orange"
+                                    icon={<Award className="w-5 h-5" />}
+                                />
+                            )}
+                        </div>
+                    </section>
+                )}
 
             {/* 텍스트 섹션들 */}
             <ReportSection
@@ -535,24 +579,56 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
 }
 
 // 점수 카드 컴포넌트
-function ScoreCard({ title, score, color, icon }: { title: string; score: number; color: string; icon: React.ReactNode }) {
+function ScoreCard({
+    title,
+    score,
+    color,
+    icon,
+}: {
+    title: string;
+    score: number;
+    color: string;
+    icon: React.ReactNode;
+}) {
     const colorMap: Record<string, { bg: string; text: string; bar: string; border: string }> = {
-        purple: { bg: 'from-purple-50 to-purple-100', text: 'text-purple-700', bar: 'bg-purple-500', border: 'border-purple-200' },
-        blue: { bg: 'from-blue-50 to-blue-100', text: 'text-blue-700', bar: 'bg-blue-500', border: 'border-blue-200' },
-        emerald: { bg: 'from-emerald-50 to-emerald-100', text: 'text-emerald-700', bar: 'bg-emerald-500', border: 'border-emerald-200' },
-        orange: { bg: 'from-orange-50 to-orange-100', text: 'text-orange-700', bar: 'bg-orange-500', border: 'border-orange-200' },
+        purple: {
+            bg: "from-purple-50 to-purple-100",
+            text: "text-purple-700",
+            bar: "bg-purple-500",
+            border: "border-purple-200",
+        },
+        blue: {
+            bg: "from-blue-50 to-blue-100",
+            text: "text-blue-700",
+            bar: "bg-blue-500",
+            border: "border-blue-200",
+        },
+        emerald: {
+            bg: "from-emerald-50 to-emerald-100",
+            text: "text-emerald-700",
+            bar: "bg-emerald-500",
+            border: "border-emerald-200",
+        },
+        orange: {
+            bg: "from-orange-50 to-orange-100",
+            text: "text-orange-700",
+            bar: "bg-orange-500",
+            border: "border-orange-200",
+        },
     };
 
     const colors = colorMap[color];
 
     return (
-        <div className={`p-5 bg-gradient-to-br ${colors.bg} rounded-xl border ${colors.border} transform transition-all duration-300 hover:scale-105 hover:shadow-lg`}>
+        <div
+            className={`p-5 bg-gradient-to-br ${colors.bg} rounded-xl border ${colors.border} transform transition-all duration-300 hover:scale-105 hover:shadow-lg`}
+        >
             <div className={`flex items-center gap-2 ${colors.text} mb-2`}>
                 {icon}
                 <div className="text-xs font-semibold">{title}</div>
             </div>
             <div className={`text-3xl font-bold ${colors.text} mb-3`}>{score}</div>
-            <div className={`w-full h-3 bg-white/50 rounded-full overflow-hidden shadow-inner`}>
+            <div className="w-full h-3 bg-white/50 rounded-full overflow-hidden shadow-inner">
                 <div
                     className={`h-full ${colors.bar} rounded-full transition-all duration-1000 ease-out`}
                     style={{ width: `${score}%` }}
@@ -563,18 +639,28 @@ function ScoreCard({ title, score, color, icon }: { title: string; score: number
 }
 
 // 리포트 섹션 컴포넌트
-function ReportSection({ title, content, color, icon }: { title: string; content: string; color: string; icon?: React.ReactNode }) {
+function ReportSection({
+    title,
+    content,
+    color,
+    icon,
+}: {
+    title: string;
+    content: string;
+    color: string;
+    icon?: React.ReactNode;
+}) {
     const colorMap: Record<string, string> = {
-        blue: 'from-blue-500 to-blue-600',
-        purple: 'from-purple-500 to-purple-600',
-        emerald: 'from-emerald-500 to-emerald-600',
-        orange: 'from-orange-500 to-orange-600',
+        blue: "from-blue-500 to-blue-600",
+        purple: "from-purple-500 to-purple-600",
+        emerald: "from-emerald-500 to-emerald-600",
+        orange: "from-orange-500 to-orange-600",
     };
 
     return (
         <section className="border-2 border-gray-200 rounded-2xl p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center gap-3 mb-4">
-                <div className={`w-1 h-10 bg-gradient-to-b ${colorMap[color]} rounded-full`}></div>
+                <div className={`w-1 h-10 bg-gradient-to-b ${colorMap[color]} rounded-full`} />
                 {icon && <div className="text-gray-700">{icon}</div>}
                 <h3 className="text-xl font-bold text-gray-900">{title}</h3>
             </div>
