@@ -34,7 +34,7 @@ export function HeroSection({ }: HeroSectionProps) {
             className="text-lg md:text-xl mb-12 leading-relaxed"
             style={{ fontWeight: 700, color: '#FFFFFF' }}
           >
-            크리에이터의 감각을 데이터 기반 브랜드 전략과 BM 리포트로 구체화합니다.
+            크리에이터의 감각을 데이터 기반 브랜드 전략과 BEAUTIQ 리포트로 구체화합니다.
           </p>
 
           <div className="flex items-center justify-center">
