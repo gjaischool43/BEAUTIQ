@@ -23,7 +23,7 @@ export function SubHeroSection() {
 
             <p>
               전문적인 데이터 기반{' '}
-              <span style={{ color: '#61BFAD', fontWeight: 700 }}>브랜드 전략·BM 리포트</span>
+              <span style={{ color: '#61BFAD', fontWeight: 700 }}>브랜드 전략·BEAUTIQ 리포트</span>
               를 가장 빠르게 받아보세요.
             </p>
           </div>
