@@ -198,11 +198,11 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                                     <TabsTrigger
                                         value="bm"
                                         className="
-                                                    data-[state=active]:bg-blue-600
-                                                    data-[state=active]:text-white
-                                                    data-[state=active]:shadow
-                                                    data-[state=active]:border-blue-600
                                                     border
+                                                    data-[state=active]:!bg-blue-600
+                                                    data-[state=active]:!text-white
+                                                    data-[state=active]:shadow
+                                                    data-[state=active]:!border-blue-600
                                                 "
                                     >
                                         브랜드 BM 보고서
@@ -211,11 +211,11 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                                     <TabsTrigger
                                         value="creator"
                                         className="
-                                                    data-[state=active]:bg-blue-600
-                                                    data-[state=active]:text-white
-                                                    data-[state=active]:shadow
-                                                    data-[state=active]:border-blue-600
                                                     border
+                                                    data-[state=active]:!bg-blue-600
+                                                    data-[state=active]:!text-white
+                                                    data-[state=active]:shadow
+                                                    data-[state=active]:!border-blue-600
                                                 "
                                     >
                                         크리에이터 분석 보고서
@@ -223,17 +223,31 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                                 </TabsList>
 
                                 <TabsContent value="bm">
-                                    {/* BM 리포트 */}
-                                </TabsContent>
-
-                                <TabsContent value="creator">
-                                    {creatorLoading ? (
-                                        <div>크리에이터 분석 보고서를 불러오는 중...</div>
+                                    {report.html ? (
+                                        <Card className="shadow-lg border border-gray-200">
+                                            <CardHeader className="pb-3">
+                                                <CardTitle className="text-lg">beautiq 보고서</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="max-h-[70vh] overflow-y-auto">
+                                                <div
+                                                    className="bm-report prose prose-sm max-w-none text-sm leading-relaxed"
+                                                    style={{
+                                                        '--tw-prose-body': '#374151',
+                                                        '--tw-prose-headings': '#111827',
+                                                        '--tw-prose-links': '#2563eb',
+                                                    } as React.CSSProperties}
+                                                    dangerouslySetInnerHTML={{ __html: report.html }}
+                                                />
+                                            </CardContent>
+                                        </Card>
                                     ) : (
-                                        <CreatorReportView report={creatorReport} />
+                                        <pre className="text-xs bg-muted/60 p-4 rounded-md overflow-x-auto whitespace-pre-wrap break-words">
+                                            {JSON.stringify(report.contents, null, 2)}
+                                        </pre>
                                     )}
                                 </TabsContent>
                             </Tabs>
+
 
                         </CardContent>
                     </Card>
