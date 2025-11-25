@@ -30,7 +30,7 @@ import {
     Tooltip,
 } from "recharts";
 import { TrendingUp, Users, Eye, Star, Award, AlertCircle } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+
 
 import "../styles/tabs.css";
 
@@ -109,7 +109,7 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
     const [creatorLoading, setCreatorLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<"bm" | "creator">("bm");
 
-    const [searchParams] = useSearchParams();
+    const searchParams = new URLSearchParams(window.location.search);
 
     const bmScrollRef = useRef<HTMLDivElement | null>(null);
     const creatorScrollRef = useRef<HTMLDivElement | null>(null);
