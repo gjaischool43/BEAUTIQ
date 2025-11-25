@@ -1,20 +1,52 @@
 // src/components/RequestLookupPage.tsx
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type React from "react";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "./ui/card";
+import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardContent,
+    CardDescription,
+} from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import {
-    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-    ResponsiveContainer, Cell, PieChart, Pie, BarChart, Bar, XAxis, YAxis,
-    Tooltip
+    RadarChart,
+    Radar,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
+    ResponsiveContainer,
+    Cell,
+    PieChart,
+    Pie,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    Tooltip,
 } from "recharts";
 import { TrendingUp, Users, Eye, Star, Award, AlertCircle } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 import "../styles/tabs.css";
+
+declare global {
+    interface Window {
+        gtag?: (...args: any[]) => void;
+        __bmScroll25?: boolean;
+        __bmScroll50?: boolean;
+        __bmScroll75?: boolean;
+        __bmScroll90?: boolean;
+        __creatorScroll25?: boolean;
+        __creatorScroll50?: boolean;
+        __creatorScroll75?: boolean;
+        __creatorScroll90?: boolean;
+    }
+}
 
 interface RequestLookupPageProps {
     onBack: () => void;
@@ -53,22 +85,112 @@ interface CreatorReport {
     created_at: string;
 }
 
-interface MetricItem {
-    label: string;
-    value: string | number;
-    unit?: string;
-    percentage?: number;
-}
+const getUtmFromStorage = () => ({
+    utm_source: localStorage.getItem("utm_source") || "(none)",
+    utm_medium: localStorage.getItem("utm_medium") || "(none)",
+    utm_campaign: localStorage.getItem("utm_campaign") || "(none)",
+    utm_content: localStorage.getItem("utm_content") || "(none)",
+});
+
+const sendGtagEvent = (name: string, params: Record<string, any>) => {
+    if (typeof window !== "undefined" && typeof window.gtag === "function") {
+        window.gtag("event", name, params);
+    }
+};
 
 export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
     const [email, setEmail] = useState("");
     const [viewPw, setViewPw] = useState("");
     const [loading, setLoading] = useState(false);
     const [report, setReport] = useState<LookupReport | null>(null);
-    const [creatorReport, setCreatorReport] = useState<CreatorReport | null>(null);
+    const [creatorReport, setCreatorReport] = useState<CreatorReport | null>(
+        null
+    );
     const [creatorLoading, setCreatorLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState<"bm" | "creator">("bm");
 
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+    const [searchParams] = useSearchParams();
+
+    const bmScrollRef = useRef<HTMLDivElement | null>(null);
+    const creatorScrollRef = useRef<HTMLDivElement | null>(null);
+
+    const API_BASE =
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+    // URL의 UTM 파라미터를 localStorage에 저장
+    useEffect(() => {
+        const keys = ["utm_source", "utm_medium", "utm_campaign", "utm_content"] as const;
+        keys.forEach((key) => {
+            const value = searchParams.get(key);
+            if (value) {
+                localStorage.setItem(key, value);
+            }
+        });
+    }, [searchParams]);
+
+    // 탭 변경 시 GA4 이벤트 전송
+    const handleTabChange = (value: string) => {
+        const tab = value === "creator" ? "creator" : "bm";
+        setActiveTab(tab);
+
+        const reportType = tab === "bm" ? "bm_report" : "creator_report";
+
+        sendGtagEvent("report_tab_open", {
+            report_type: reportType,
+            ...getUtmFromStorage(),
+        });
+    };
+
+    // 카드 내부 스크롤 추적 (BM / Creator 각각)
+    useEffect(() => {
+        const target =
+            activeTab === "bm" ? bmScrollRef.current : creatorScrollRef.current;
+
+        if (!target) return;
+
+        const prefix = activeTab === "bm" ? "__bm" : "__creator";
+
+        const handle = () => {
+            const scrollTop = target.scrollTop;
+            const scrollHeight = target.scrollHeight - target.clientHeight;
+            if (scrollHeight <= 0) return;
+
+            const percent = Math.round((scrollTop / scrollHeight) * 100);
+
+            const currentUrl = new URL(window.location.href);
+            const requestIdParam = currentUrl.searchParams.get("request_id");
+            const reportType = activeTab === "bm" ? "bm_report" : "creator_report";
+
+            const sendDepth = (depth: "25" | "50" | "75" | "90") => {
+                sendGtagEvent("report_scroll", {
+                    scroll_depth: depth,
+                    report_type: reportType,
+                    request_id: requestIdParam || "(none)",
+                    ...getUtmFromStorage(),
+                });
+            };
+
+            if (percent >= 25 && !(window as any)[`${prefix}Scroll25`]) {
+                (window as any)[`${prefix}Scroll25`] = true;
+                sendDepth("25");
+            }
+            if (percent >= 50 && !(window as any)[`${prefix}Scroll50`]) {
+                (window as any)[`${prefix}Scroll50`] = true;
+                sendDepth("50");
+            }
+            if (percent >= 75 && !(window as any)[`${prefix}Scroll75`]) {
+                (window as any)[`${prefix}Scroll75`] = true;
+                sendDepth("75");
+            }
+            if (percent >= 90 && !(window as any)[`${prefix}Scroll90`]) {
+                (window as any)[`${prefix}Scroll90`] = true;
+                sendDepth("90");
+            }
+        };
+
+        target.addEventListener("scroll", handle);
+        return () => target.removeEventListener("scroll", handle);
+    }, [activeTab]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -107,7 +229,14 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
             const fetchedReport = data.report ?? null;
             setReport(fetchedReport);
 
-            // 크리에이터 분석 보고서도 함께 조회
+            // 인증된 request_id를 URL에 반영
+            if (fetchedReport?.request_id) {
+                const url = new URL(window.location.href);
+                url.searchParams.set("request_id", String(fetchedReport.request_id));
+                window.history.replaceState(null, "", url.toString());
+            }
+
+            // 크리에이터 분석 보고서 조회
             if (fetchedReport?.request_id) {
                 setCreatorLoading(true);
                 try {
@@ -155,7 +284,8 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                         <CardHeader>
                             <CardTitle>의뢰 조회</CardTitle>
                             <CardDescription>
-                                의뢰 시 입력하신 이메일과 열람 비밀번호로 BM 보고서를 조회할 수 있습니다.
+                                의뢰 시 입력하신 이메일과 열람 비밀번호로 BM 보고서를 조회할 수
+                                있습니다.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -193,7 +323,11 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                 {report && (
                     <Card>
                         <CardContent className="overflow-hidden">
-                            <Tabs defaultValue="bm" className="w-full">
+                            <Tabs
+                                value={activeTab}
+                                onValueChange={handleTabChange}
+                                className="w-full"
+                            >
                                 <TabsList className="custom-tabs-list">
                                     <TabsTrigger value="bm" className="custom-tab-trigger">
                                         브랜드 BM 보고서
@@ -209,9 +343,14 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                                     {report.html ? (
                                         <Card className="shadow-lg border border-gray-200">
                                             <CardHeader className="pb-3">
-                                                <CardTitle className="text-lg">beautiq 보고서</CardTitle>
+                                                <CardTitle className="text-lg">
+                                                    beautiq 보고서
+                                                </CardTitle>
                                             </CardHeader>
-                                            <CardContent className="max-h-[70vh] overflow-y-auto">
+                                            <CardContent
+                                                ref={bmScrollRef}
+                                                className="max-h-[70vh] overflow-y-auto"
+                                            >
                                                 <div
                                                     className="bm-report prose prose-sm max-w-none text-sm leading-relaxed"
                                                     style={
@@ -221,7 +360,9 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                                                             "--tw-prose-links": "#2563eb",
                                                         } as React.CSSProperties
                                                     }
-                                                    dangerouslySetInnerHTML={{ __html: report.html }}
+                                                    dangerouslySetInnerHTML={{
+                                                        __html: report.html,
+                                                    }}
                                                 />
                                             </CardContent>
                                         </Card>
@@ -235,22 +376,27 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                                 {/* 크리에이터 분석 보고서 탭 */}
                                 <TabsContent
                                     value="creator"
-                                    className="custom-tabs-content max-h-[70vh] overflow-y-auto"
+                                    className="custom-tabs-content"
                                 >
-                                    {creatorLoading ? (
-                                        <div className="flex items-center justify-center py-12">
-                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                                        </div>
-                                    ) : creatorReport ? (
-                                        <CreatorReportView report={creatorReport} />
-                                    ) : (
-                                        <div className="text-center py-12">
-                                            <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                            <p className="text-gray-500 text-lg">
-                                                크리에이터 분석 보고서가 아직 생성되지 않았습니다.
-                                            </p>
-                                        </div>
-                                    )}
+                                    <div
+                                        ref={creatorScrollRef}
+                                        className="max-h-[70vh] overflow-y-auto"
+                                    >
+                                        {creatorLoading ? (
+                                            <div className="flex items-center justify-center py-12">
+                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                                            </div>
+                                        ) : creatorReport ? (
+                                            <CreatorReportView report={creatorReport} />
+                                        ) : (
+                                            <div className="text-center py-12">
+                                                <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                                <p className="text-gray-500 text-lg">
+                                                    크리에이터 분석 보고서가 아직 생성되지 않았습니다.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </TabsContent>
                             </Tabs>
                         </CardContent>
@@ -378,7 +524,9 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
                                     <div className="text-4xl md:text-5xl font-bold text-gray-900">
                                         {report.blc_score ?? "-"}
                                     </div>
-                                    <div className="text-xs text-gray-600 font-medium mt-1">BLC 점수</div>
+                                    <div className="text-xs text-gray-600 font-medium mt-1">
+                                        BLC 점수
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -392,7 +540,9 @@ function CreatorReportView({ report }: { report: CreatorReport | null }) {
                                     )}`}
                                 >
                                     BLC 등급: {report.blc_grade ?? "-"}
-                                    {report.blc_grade_label ? ` (${report.blc_grade_label})` : ""}
+                                    {report.blc_grade_label
+                                        ? ` (${report.blc_grade_label})`
+                                        : ""}
                                 </div>
                                 <div className="px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow-md">
                                     Tier: {report.blc_tier ?? "-"}
