@@ -330,7 +330,7 @@ export function RequestLookupPage({ onBack }: RequestLookupPageProps) {
                             >
                                 <TabsList className="custom-tabs-list">
                                     <TabsTrigger value="bm" className="custom-tab-trigger">
-                                        브랜드 BM 보고서
+                                        BEAUTIQ 보고서
                                     </TabsTrigger>
 
                                     <TabsTrigger value="creator" className="custom-tab-trigger">
